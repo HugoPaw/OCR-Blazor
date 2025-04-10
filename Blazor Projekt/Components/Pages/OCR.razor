@@ -1,0 +1,79 @@
+﻿@page "/OCR"
+
+@inject BlazorProjekt.Components.Services.OcrService OcrService
+
+<PageTitle>OCR</PageTitle>
+
+<h1>OCR</h1>
+
+<div class="mb-3">
+    <InputFile OnChange="OnFileChange" />
+    <button class="btn btn-primary ms-2" @onclick="OnEvaluate" disabled="@(!isFileSelected)">Auswerten</button>
+</div>
+
+@if (!string.IsNullOrEmpty(OcrService.FileName))
+{
+    <p>Ausgewählte Datei: <strong>@OcrService.FileName</strong></p>
+}
+
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Fileending</th>
+            <th>Filename</th>
+            <th>Text</th>
+            <th>Time</th>
+            <th>OCR Method</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in entries)
+        {
+            <tr>
+                <td>@item.Id</td>
+                <td>@item.FileEnding</td>
+                <td>@item.FileName</td>
+                <td>@item.Text</td>
+                <td>@item.Time.ToString("HH:mm:ss")</td>
+                <td>@item.Method</td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+@code {
+    public class OcrEntry
+    {
+        public int Id { get; set; }
+        public string FileEnding { get; set; } = string.Empty;
+        public string FileName { get; set; } = string.Empty;
+        public string Text { get; set; } = string.Empty;
+        public DateTime Time { get; set; }
+        public string Method { get; set; } = string.Empty;
+    }
+
+    private List<OcrEntry> entries = new();
+    private bool isFileSelected => OcrService.FileData != null;
+
+    private void OnFileChange(InputFileChangeEventArgs e)
+    {
+        var file = e.File;
+        OcrService.LoadFile(file);
+    }
+
+    private void OnEvaluate()
+    {
+        var text = OcrService.Evaluate();
+
+        entries.Add(new OcrEntry
+            {
+                Id = entries.Count + 1,
+                FileEnding = OcrService.FileEnding ?? "",
+                FileName = OcrService.FileName ?? "",
+                Text = text,
+                Time = DateTime.Now,
+                Method = "Mock OCR" // später ersetzen
+            });
+    }
+}
