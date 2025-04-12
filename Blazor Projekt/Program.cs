@@ -1,5 +1,6 @@
 using BlazorProjekt.Components;
-using BlazorProjekt.Components.Services; // <- Namespace für OcrService hinzufügen
+using BlazorProjekt.Services; // <-- aktualisierter Namespace
+using Microsoft.AspNetCore.Http.Features;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -7,7 +8,15 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
-// Registriere OcrService als Scoped Service (pro Benutzer)
+// Allow larger uploads (e.g. PDFs up to 15 MB)
+builder.Services.Configure<FormOptions>(options =>
+{
+    options.MultipartBodyLengthLimit = 15 * 1024 * 1024; // 15 MB
+});
+
+// Register OCR-related services (modular)
+builder.Services.AddScoped<PdfTextExtractor>();
+builder.Services.AddScoped<ImageTextExtractor>();
 builder.Services.AddScoped<OcrService>();
 
 var app = builder.Build();

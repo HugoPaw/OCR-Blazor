@@ -1,79 +1,66 @@
-﻿@page "/OCR"
+﻿@page "/ocr"
+@inject BlazorProjekt.Services.OcrService OcrService
+@using BlazorProjekt.Services
 
-@inject BlazorProjekt.Components.Services.OcrService OcrService
+<h3>OCR Evaluation</h3>
 
-<PageTitle>OCR</PageTitle>
+<InputFile OnChange="HandleFileSelectedAsync" maxAllowedSize="15728640" /> <!-- 15 MB -->
 
-<h1>OCR</h1>
+<button type="button" @onclick="EvaluateFile" disabled="@(!isFileLoaded)">
+    Evaluate
+</button>
 
-<div class="mb-3">
-    <InputFile OnChange="OnFileChange" />
-    <button class="btn btn-primary ms-2" @onclick="OnEvaluate" disabled="@(!isFileSelected)">Auswerten</button>
-</div>
-
-@if (!string.IsNullOrEmpty(OcrService.FileName))
+@if (!string.IsNullOrWhiteSpace(result))
 {
-    <p>Ausgewählte Datei: <strong>@OcrService.FileName</strong></p>
+    <div style="margin-top: 20px;">
+        <p><strong>File ID:</strong> @OcrService.FileId</p>
+        <p><strong>File Name:</strong> @OcrService.FileName</p>
+        <p><strong>File Extension:</strong> @OcrService.FileEnding</p>
+        <p><strong>OCR Method:</strong> @OcrService.OcrMethod</p>
+        <p><strong>Evaluation Time:</strong> @OcrService.EvaluationTime?.ToString("yyyy-MM-dd HH:mm:ss")</p>
+        <p><strong>Recognized Text:</strong></p>
+        <pre>@result</pre>
+    </div>
+}
+else if (isEvaluated && string.IsNullOrWhiteSpace(result))
+{
+    <div style="margin-top: 20px; color: red;">
+        <strong>No text could be extracted or unsupported file type.</strong>
+    </div>
 }
 
-<table class="table table-striped">
-    <thead>
-        <tr>
-            <th>ID</th>
-            <th>Fileending</th>
-            <th>Filename</th>
-            <th>Text</th>
-            <th>Time</th>
-            <th>OCR Method</th>
-        </tr>
-    </thead>
-    <tbody>
-        @foreach (var item in entries)
-        {
-            <tr>
-                <td>@item.Id</td>
-                <td>@item.FileEnding</td>
-                <td>@item.FileName</td>
-                <td>@item.Text</td>
-                <td>@item.Time.ToString("HH:mm:ss")</td>
-                <td>@item.Method</td>
-            </tr>
-        }
-    </tbody>
-</table>
-
 @code {
-    public class OcrEntry
+    private string? result;
+    private bool isFileLoaded = false;
+    private bool isEvaluated = false;
+
+    private async Task HandleFileSelectedAsync(InputFileChangeEventArgs e)
     {
-        public int Id { get; set; }
-        public string FileEnding { get; set; } = string.Empty;
-        public string FileName { get; set; } = string.Empty;
-        public string Text { get; set; } = string.Empty;
-        public DateTime Time { get; set; }
-        public string Method { get; set; } = string.Empty;
-    }
-
-    private List<OcrEntry> entries = new();
-    private bool isFileSelected => OcrService.FileData != null;
-
-    private void OnFileChange(InputFileChangeEventArgs e)
-    {
-        var file = e.File;
-        OcrService.LoadFile(file);
-    }
-
-    private void OnEvaluate()
-    {
-        var text = OcrService.Evaluate();
-
-        entries.Add(new OcrEntry
+        try
+        {
+            var file = e.File;
+            if (file != null)
             {
-                Id = entries.Count + 1,
-                FileEnding = OcrService.FileEnding ?? "",
-                FileName = OcrService.FileName ?? "",
-                Text = text,
-                Time = DateTime.Now,
-                Method = "Mock OCR" // später ersetzen
-            });
+                Console.WriteLine("File selected: " + file.Name);
+                await OcrService.LoadFileAsync(file);
+                isFileLoaded = true;
+                result = null;
+                isEvaluated = false;
+                StateHasChanged(); // Explicitly trigger UI update if needed
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading file: {ex.Message}");
+            // Optionally set an error message for the user
+        }
     }
+
+    private void EvaluateFile()
+    {
+        Console.WriteLine("EvaluateFile triggered"); 
+        result = OcrService.Evaluate();
+        isEvaluated = true;
+    }
+
 }
