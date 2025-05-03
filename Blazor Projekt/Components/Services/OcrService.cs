@@ -27,7 +27,7 @@ namespace BlazorProjekt.Services
             FileEnding = Path.GetExtension(file.Name).ToLowerInvariant();
 
             using var stream = new MemoryStream();
-            await file.OpenReadStream().CopyToAsync(stream);
+            await file.OpenReadStream(maxAllowedSize: 15 * 1024 * 1024).CopyToAsync(stream);
             FileData = stream.ToArray();
 
             FileId = GenerateFileId(FileData);
@@ -51,24 +51,27 @@ namespace BlazorProjekt.Services
         private string ExtractPdfText()
         {
             OcrMethod = "PdfPig";
-            Console.WriteLine("ExtractPdfText called");
-
             try
             {
                 return _pdfExtractor.ExtractText(FileData!);
             }
             catch (Exception ex)
             {
-                Console.WriteLine("Error in ExtractPdfText: " + ex.Message);
                 return $"PDF extraction failed: {ex.Message}";
             }
         }
 
-
         private string ExtractImageText()
         {
             OcrMethod = "Tesseract OCR";
-            return _imageExtractor.ExtractText(FileData);
+            try
+            {
+                return _imageExtractor.ExtractText(FileData!);
+            }
+            catch (Exception ex)
+            {
+                return $"Image OCR failed: {ex.Message}";
+            }
         }
 
         private string GenerateFileId(byte[] data)

@@ -1,10 +1,10 @@
 ﻿@page "/ocr"
 @inject BlazorProjekt.Services.OcrService OcrService
-@using BlazorProjekt.Services
+@using Microsoft.AspNetCore.Components.Forms
 
 <h3>OCR Evaluation</h3>
 
-<InputFile OnChange="HandleFileSelectedAsync" maxAllowedSize="15728640" /> <!-- 15 MB -->
+<InputFile OnChange="HandleFileSelectedAsync" maxAllowedSize="15728640" />
 
 <button type="button" @onclick="EvaluateFile" disabled="@(!isFileLoaded)">
     Evaluate
@@ -13,13 +13,17 @@
 @if (!string.IsNullOrWhiteSpace(result))
 {
     <div style="margin-top: 20px;">
-        <p><strong>File ID:</strong> @OcrService.FileId</p>
-        <p><strong>File Name:</strong> @OcrService.FileName</p>
-        <p><strong>File Extension:</strong> @OcrService.FileEnding</p>
-        <p><strong>OCR Method:</strong> @OcrService.OcrMethod</p>
-        <p><strong>Evaluation Time:</strong> @OcrService.EvaluationTime?.ToString("yyyy-MM-dd HH:mm:ss")</p>
-        <p><strong>Recognized Text:</strong></p>
-        <pre>@result</pre>
+        <table style="border-collapse: collapse; width: 100%;">
+            <tr><th style="text-align: left; padding: 4px;">Property</th><th style="text-align: left; padding: 4px;">Value</th></tr>
+            <tr><td style="padding: 4px;">File ID</td><td style="padding: 4px;">@OcrService.FileId</td></tr>
+            <tr><td style="padding: 4px;">File Name</td><td style="padding: 4px;">@OcrService.FileName</td></tr>
+            <tr><td style="padding: 4px;">File Extension</td><td style="padding: 4px;">@OcrService.FileEnding</td></tr>
+            <tr><td style="padding: 4px;">OCR Method</td><td style="padding: 4px;">@OcrService.OcrMethod</td></tr>
+            <tr><td style="padding: 4px;">Evaluation Time</td><td style="padding: 4px;">@OcrService.EvaluationTime?.ToString("yyyy-MM-dd HH:mm:ss")</td></tr>
+        </table>
+
+        <p style="margin-top: 20px;"><strong>Recognized Text:</strong></p>
+        <pre style="background-color: #f6f6f6; padding: 10px; border: 1px solid #ddd;">@result</pre>
     </div>
 }
 else if (isEvaluated && string.IsNullOrWhiteSpace(result))
@@ -41,26 +45,21 @@ else if (isEvaluated && string.IsNullOrWhiteSpace(result))
             var file = e.File;
             if (file != null)
             {
-                Console.WriteLine("File selected: " + file.Name);
                 await OcrService.LoadFileAsync(file);
                 isFileLoaded = true;
                 result = null;
                 isEvaluated = false;
-                StateHasChanged(); // Explicitly trigger UI update if needed
             }
         }
         catch (Exception ex)
         {
             Console.WriteLine($"Error loading file: {ex.Message}");
-            // Optionally set an error message for the user
         }
     }
 
     private void EvaluateFile()
     {
-        Console.WriteLine("EvaluateFile triggered"); 
         result = OcrService.Evaluate();
         isEvaluated = true;
     }
-
 }

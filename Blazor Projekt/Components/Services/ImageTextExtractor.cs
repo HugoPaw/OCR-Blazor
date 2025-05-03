@@ -4,14 +4,19 @@ namespace BlazorProjekt.Services
 {
     public class ImageTextExtractor
     {
-        private const string Language = "eng"; // kannst du erweitern
-        private const string TessdataPath = "wwwroot/tessdata";
+        private readonly string _tessdataPath;
+        private const string Language = "eng";
+
+        public ImageTextExtractor(IWebHostEnvironment env)
+        {
+            _tessdataPath = Path.Combine(env.ContentRootPath, "tessdata");
+        }
 
         public string ExtractText(byte[] imageBytes)
         {
             try
             {
-                using var engine = new TesseractEngine(TessdataPath, Language, EngineMode.Default);
+                using var engine = new TesseractEngine(_tessdataPath, Language, EngineMode.Default);
                 using var img = Pix.LoadFromMemory(imageBytes);
                 using var page = engine.Process(img);
                 return page.GetText();
