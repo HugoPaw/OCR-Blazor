@@ -1,0 +1,53 @@
+﻿@page "/wetter"
+@inject HttpClient Http
+
+<h3>Wetter Luzern (nächste Stunden)</h3>
+
+@if (weatherData != null)
+{
+    <ul>
+        @for (int i = 0; i < Math.Min(weatherData.Hourly.Time.Count, weatherData.Hourly.Temperature2m.Count); i++)
+        {
+            <li>
+                @weatherData.Hourly.Time[i]: @weatherData.Hourly.Temperature2m[i] °C
+            </li>
+        }
+    </ul>
+}
+else if (isError)
+{
+    <p style="color: red;">Fehler beim Laden der Wetterdaten.</p>
+}
+else
+{
+    <p>Lade Wetterdaten...</p>
+}
+
+@code {
+    private WeatherResponse? weatherData;
+    private bool isError = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var url = "https://api.open-meteo.com/v1/forecast?latitude=47.05&longitude=8.31&hourly=temperature_2m";
+            weatherData = await Http.GetFromJsonAsync<WeatherResponse>(url);
+        }
+        catch
+        {
+            isError = true;
+        }
+    }
+
+    public class WeatherResponse
+    {
+        public Hourly Hourly { get; set; } = new();
+    }
+
+    public class Hourly
+    {
+        public List<string> Time { get; set; } = new();
+        public List<double> Temperature2m { get; set; } = new();
+    }
+}
