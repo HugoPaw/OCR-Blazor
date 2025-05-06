@@ -1,15 +1,20 @@
 ﻿@page "/wetter"
+@using System.Text.Json.Serialization
 @inject HttpClient Http
+@inject IJSRuntime JS
 
 <h3>Wetter Luzern (nächste Stunden)</h3>
+
+<canvas id="weatherChart" width="800" height="400"></canvas>
 
 @if (weatherData != null)
 {
     <ul>
         @for (int i = 0; i < Math.Min(weatherData.Hourly.Time.Count, weatherData.Hourly.Temperature2m.Count); i++)
         {
+            var parsedTime = DateTime.Parse(weatherData.Hourly.Time[i]);
             <li>
-                @weatherData.Hourly.Time[i]: @weatherData.Hourly.Temperature2m[i] °C
+                @parsedTime.ToString("dd.MM. HH:mm") Uhr: @weatherData.Hourly.Temperature2m[i] °C
             </li>
         }
     </ul>
@@ -26,28 +31,58 @@ else
 @code {
     private WeatherResponse? weatherData;
     private bool isError = false;
+    private bool chartInitialized = false;
 
-    protected override async Task OnInitializedAsync()
+    protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        try
+        if (firstRender)
         {
-            var url = "https://api.open-meteo.com/v1/forecast?latitude=47.05&longitude=8.31&hourly=temperature_2m";
-            weatherData = await Http.GetFromJsonAsync<WeatherResponse>(url);
-        }
-        catch
-        {
-            isError = true;
+            Console.WriteLine("[DEBUG] Wetterdaten werden geladen...");
+
+            try
+            {
+                var url = "https://api.open-meteo.com/v1/forecast?latitude=47.05&longitude=8.31&hourly=temperature_2m";
+                weatherData = await Http.GetFromJsonAsync<WeatherResponse>(url);
+
+                if (weatherData?.Hourly?.Time != null && weatherData.Hourly.Temperature2m != null)
+                {
+                    var times = weatherData.Hourly.Time.Take(24).ToList();
+                    var temps = weatherData.Hourly.Temperature2m.Take(24).ToList();
+
+                    Console.WriteLine("[DEBUG] Daten erfolgreich geladen.");
+                    Console.WriteLine($"[DEBUG] Zeiten: {string.Join(", ", times)}");
+                    Console.WriteLine($"[DEBUG] Temperaturen: {string.Join(", ", temps)}");
+
+                    await JS.InvokeVoidAsync("drawWeatherChart", times, temps);
+                    chartInitialized = true;
+                    StateHasChanged();
+                }
+                else
+                {
+                    Console.WriteLine("[FEHLER] Zeit- oder Temperaturdaten sind null.");
+                    isError = true;
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[FEHLER] Wetterdaten konnten nicht geladen werden: {ex}");
+                isError = true;
+            }
         }
     }
 
     public class WeatherResponse
     {
+        [JsonPropertyName("hourly")]
         public Hourly Hourly { get; set; } = new();
     }
 
     public class Hourly
     {
+        [JsonPropertyName("time")]
         public List<string> Time { get; set; } = new();
+
+        [JsonPropertyName("temperature_2m")]
         public List<double> Temperature2m { get; set; } = new();
     }
 }
