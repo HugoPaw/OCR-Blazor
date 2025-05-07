@@ -24,4 +24,10 @@
 	  <None Include="wwwroot\WetterStyleSheet.css" />
 	</ItemGroup>
 
+	<ItemGroup>
+	  <Content Update="wwwroot\weather.js">
+	    <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+	  </Content>
+	</ItemGroup>
+
 </Project>

@@ -3,42 +3,48 @@
 @inject HttpClient Http
 @inject IJSRuntime JS
 
-<h3>Wetter Luzern (nächste Stunden)</h3>
+<div class="weather-container">
+    <h3 class="weather-title">Wetter in Luzern</h3>
 
-<canvas id="weatherChart" width="800" height="400"></canvas>
+    <div class="chart-container">
+        <canvas id="weatherChart"></canvas>
+    </div>
 
-@if (weatherData != null)
-{
-    <ul>
-        @for (int i = 0; i < Math.Min(weatherData.Hourly.Time.Count, weatherData.Hourly.Temperature2m.Count); i++)
-        {
-            var parsedTime = DateTime.Parse(weatherData.Hourly.Time[i]);
-            <li>
-                @parsedTime.ToString("dd.MM. HH:mm") Uhr: @weatherData.Hourly.Temperature2m[i] °C
-            </li>
-        }
-    </ul>
-}
-else if (isError)
-{
-    <p style="color: red;">Fehler beim Laden der Wetterdaten.</p>
-}
-else
-{
-    <p>Lade Wetterdaten...</p>
-}
+    @if (weatherData != null)
+    {
+        <ul class="temperature-list">
+            @for (int i = 0; i < Math.Min(weatherData.Hourly.Time.Count, weatherData.Hourly.Temperature2m.Count); i++)
+            {
+                var parsedTime = DateTime.Parse(weatherData.Hourly.Time[i]);
+                <li class="temperature-item">
+                    <span class="temperature-time">@parsedTime.ToString("dd.MM. HH:mm") Uhr:</span>
+                    <span class="temperature-value">@weatherData.Hourly.Temperature2m[i] °C</span>
+                </li>
+            }
+        </ul>
+    }
+    else if (isError)
+    {
+        <div class="error-message">
+            <p>Fehler beim Laden der Wetterdaten. Bitte versuchen Sie es später erneut.</p>
+        </div>
+    }
+    else
+    {
+        <p class="loading-message">Wetterdaten werden geladen...</p>
+    }
+</div>
 
 @code {
     private WeatherResponse? weatherData;
     private bool isError = false;
-    private bool chartInitialized = false;
+    private bool chartDrawn = false;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
         {
             Console.WriteLine("[DEBUG] Wetterdaten werden geladen...");
-
             try
             {
                 var url = "https://api.open-meteo.com/v1/forecast?latitude=47.05&longitude=8.31&hourly=temperature_2m";
@@ -46,27 +52,46 @@ else
 
                 if (weatherData?.Hourly?.Time != null && weatherData.Hourly.Temperature2m != null)
                 {
-                    var times = weatherData.Hourly.Time.Take(24).ToList();
-                    var temps = weatherData.Hourly.Temperature2m.Take(24).ToList();
-
-                    Console.WriteLine("[DEBUG] Daten erfolgreich geladen.");
-                    Console.WriteLine($"[DEBUG] Zeiten: {string.Join(", ", times)}");
-                    Console.WriteLine($"[DEBUG] Temperaturen: {string.Join(", ", temps)}");
-
-                    await JS.InvokeVoidAsync("drawWeatherChart", times, temps);
-                    chartInitialized = true;
+                    // UI-Update erzwingen, damit Canvas im DOM ist
                     StateHasChanged();
+
+                    // Längere Verzögerung für sicheres Canvas-Rendering
+                    await Task.Delay(500);
+
+                    var labels = weatherData.Hourly.Time
+                        .Take(24)
+                        .Select(t => DateTime.Parse(t).ToString("HH:mm"))
+                        .ToList();
+
+                    var values = weatherData.Hourly.Temperature2m.Take(24).ToList();
+
+                    Console.WriteLine("[DEBUG] JS wird aufgerufen mit Labels und Werten.");
+                    try
+                    {
+                        // WICHTIG: Geändert zu WETTER.drawWeatherChart
+                        await JS.InvokeVoidAsync("WETTER.drawWeatherChart", labels, values);
+                        Console.WriteLine("[DEBUG] JS-Aufruf erfolgreich.");
+                        chartDrawn = true;
+                    }
+                    catch (Exception jsEx)
+                    {
+                        Console.WriteLine($"[FEHLER] JavaScript-Funktion konnte nicht aufgerufen werden: {jsEx.Message}");
+                        isError = true;
+                        StateHasChanged();
+                    }
                 }
                 else
                 {
-                    Console.WriteLine("[FEHLER] Zeit- oder Temperaturdaten sind null.");
+                    Console.WriteLine("[FEHLER] Zeit- oder Temperaturdaten fehlen.");
                     isError = true;
+                    StateHasChanged();
                 }
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[FEHLER] Wetterdaten konnten nicht geladen werden: {ex}");
+                Console.WriteLine($"[FEHLER] Wetterdaten konnten nicht geladen werden: {ex.Message}");
                 isError = true;
+                StateHasChanged();
             }
         }
     }
