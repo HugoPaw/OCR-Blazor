@@ -1,0 +1,48 @@
+﻿<h3>Fussballspiele: Arsenal vs Chelsea (2016–2017)</h3>
+
+@if (events == null)
+{
+    <p>Lade Spiele...</p>
+}
+else if (events.Count == 0)
+{
+    <p>Keine Spiele gefunden.</p>
+}
+else
+{
+    <ul>
+        @foreach (var ev in events)
+        {
+            <li>
+                <b>@ev.strEvent</b><br />
+                Datum: @ev.dateEvent<br />
+                Liga: @ev.strLeague
+            </li>
+        }
+    </ul>
+}
+
+@code {
+    private List<FootballEvent> events;
+
+    protected override async Task OnInitializedAsync()
+    {
+        using var http = new HttpClient();
+        var url = "https://www.thesportsdb.com/api/v1/json/3/searchevents.php?e=Arsenal_vs_Chelsea&s=2016-2017";
+        var result = await http.GetFromJsonAsync<FootballResponse>(url);
+        events = result?.eventList ?? new List<FootballEvent>();
+    }
+
+    public class FootballResponse
+    {
+        public List<FootballEvent> eventList { get; set; }
+    }
+
+    public class FootballEvent
+    {
+        public string idEvent { get; set; }
+        public string strEvent { get; set; }
+        public string strLeague { get; set; }
+        public string dateEvent { get; set; }
+    }
+}

@@ -1,0 +1,71 @@
+﻿@page "/swissteams"
+
+<div class="container mt-4">
+    <h3>Schweizer Fussballteams</h3>
+
+    <input class="form-control my-3" @bind="searchTerm" placeholder="Teamname suchen..." />
+
+    @if (teams == null)
+    {
+        <p>Lade Teams...</p>
+    }
+    else if (FilteredTeams.Count == 0)
+    {
+        <p>Keine Teams gefunden.</p>
+    }
+    else
+    {
+        <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4 mt-3">
+            @foreach (var team in FilteredTeams)
+            {
+                <div class="col">
+                    <div class="card h-100 shadow-sm">
+                        @if (!string.IsNullOrEmpty(team.strTeamBadge))
+                        {
+                            <img src="@team.strTeamBadge" class="card-img-top p-3" alt="Logo von @team.strTeam" style="height:150px; object-fit:contain;" />
+                        }
+                        <div class="card-body">
+                            <h5 class="card-title">@team.strTeam</h5>
+                            <p class="card-text">
+                                <strong>🏆 Liga:</strong> @team.strLeague<br />
+                                <strong>🏟️ Stadion:</strong> @team.strStadium
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    private List<FootballTeam> teams = new();
+    private string searchTerm = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        using var http = new HttpClient();
+        var url = "https://www.thesportsdb.com/api/v1/json/3/search_all_teams.php?s=Soccer&c=Switzerland";
+        var response = await http.GetFromJsonAsync<TeamResponse>(url);
+        teams = response?.teams ?? new List<FootballTeam>();
+    }
+
+    private List<FootballTeam> FilteredTeams =>
+        string.IsNullOrWhiteSpace(searchTerm)
+            ? teams
+            : teams.Where(t => t.strTeam.Contains(searchTerm, StringComparison.OrdinalIgnoreCase)).ToList();
+
+    public class TeamResponse
+    {
+        public List<FootballTeam> teams { get; set; }
+    }
+
+    public class FootballTeam
+    {
+        public string idTeam { get; set; }
+        public string strTeam { get; set; }
+        public string strLeague { get; set; }
+        public string strStadium { get; set; }
+        public string strTeamBadge { get; set; }
+    }
+}
