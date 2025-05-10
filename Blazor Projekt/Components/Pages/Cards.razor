@@ -1,0 +1,21 @@
+﻿@page "/cards"
+@inject IJSRuntime JS
+
+<h3>Karten-Scanner</h3>
+
+<button @onclick="OpenCamera">📷 Karte scannen</button>
+
+@if (imageData != null)
+{
+    <p>Vorschau:</p>
+    <img src="@imageData" width="300" />
+}
+
+@code {
+    private string imageData;
+
+    private async Task OpenCamera()
+    {
+        imageData = await JS.InvokeAsync<string>("openCameraAndGetImage");
+    }
+}
