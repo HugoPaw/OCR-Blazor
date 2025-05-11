@@ -5,17 +5,48 @@
 
 <button @onclick="OpenCamera">📷 Karte scannen</button>
 
+<p>Oder lade ein Bild hoch:</p>
+<InputFile OnChange="OnImageUpload" accept=".png" />
+
 @if (imageData != null)
 {
     <p>Vorschau:</p>
     <img src="@imageData" width="300" />
+    <p><strong>Erkannte Karte:</strong> @detectedCardName</p>
+    <p><strong>Preis:</strong> @cardPrice CHF</p>
 }
 
 @code {
     private string imageData;
+    private string detectedCardName;
+    private string cardPrice;
 
     private async Task OpenCamera()
     {
         imageData = await JS.InvokeAsync<string>("openCameraAndGetImage");
+        await IdentifyCardAndGetPrice(imageData);
+    }
+
+    private async Task OnImageUpload(InputFileChangeEventArgs e)
+    {
+        var file = e.File;
+
+        using var stream = file.OpenReadStream(maxAllowedSize: 5 * 1024 * 1024); // max 5MB
+        var buffer = new byte[file.Size];
+        await stream.ReadAsync(buffer);
+        imageData = $"data:{file.ContentType};base64,{Convert.ToBase64String(buffer)}";
+
+        await IdentifyCardAndGetPrice(imageData);
+    }
+
+    private async Task IdentifyCardAndGetPrice(string base64Image)
+    {
+        // TODO: Hier kommt später deine Bilderkennungs- oder OCR-Logik rein
+
+        // Platzhalter für Vorschau
+        detectedCardName = "Glurak EX";
+        cardPrice = "23.50";
+
+        await Task.CompletedTask;
     }
 }
