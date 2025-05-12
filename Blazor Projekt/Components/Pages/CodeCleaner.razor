@@ -1,0 +1,39 @@
+﻿@page "/codecleaner"
+<h3>CodeCleaner</h3>
+
+<div class="mb-3">
+    <label for="codeInput" class="form-label">Code eingeben:</label>
+    <textarea id="codeInput" class="form-control" rows="10" @bind="InputCode"></textarea>
+</div>
+
+<button class="btn btn-primary" @onclick="FormatCode">Code formatieren</button>
+
+@if (!string.IsNullOrWhiteSpace(OutputCode))
+{
+    <div class="mt-4">
+        <label class="form-label">Formatierter Code:</label>
+        <pre style="background-color: #f8f9fa; padding: 1rem;">@OutputCode</pre>
+    </div>
+}
+
+@code {
+    private string InputCode { get; set; } = string.Empty;
+    private string OutputCode { get; set; } = string.Empty;
+
+    private void FormatCode()
+    {
+        if (string.IsNullOrWhiteSpace(InputCode))
+        {
+            OutputCode = "";
+            return;
+        }
+
+        var lines = InputCode.Split('\n')
+            .Select(line => line.TrimEnd())
+            .Where(line => !string.IsNullOrWhiteSpace(line))
+            .ToList();
+
+        // Beispiel-Formatierung: Tabs zu 4 Leerzeichen, leere Zeilen entfernen
+        OutputCode = string.Join('\n', lines.Select(l => l.Replace("\t", "    ")));
+    }
+}

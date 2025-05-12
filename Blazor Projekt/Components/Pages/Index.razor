@@ -1,16 +1,34 @@
 ﻿@page "/"
 
-<h1 class="display-4">Willkommen bei Hugo's Entwickler-Portfolio</h1>
+<h1 class="display-4 mb-4">Willkommen bei Hugo's Entwickler-Portfolio</h1>
 
 <p class="lead">
     Diese Webanwendung dient als Zentrale für meine Projekte – besonders im Bereich OCR, Blazor und GitHub-Integrationen.
     Hier teste ich neue Ideen, experimentiere mit Technologien und dokumentiere meinen Fortschritt.
 </p>
 
-<hr />
+<hr class="mb-5" />
 
+<h2>Projekte & Tools</h2>
 
-<hr />
+<div class="row row-cols-1 row-cols-md-2 g-4 mt-3">
+
+    @foreach (var item in navItems)
+    {
+        <div class="col">
+            <div class="card h-100 shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title">@item.Title</h5>
+                    <p class="card-text">@item.Description</p>
+                    <NavLink class="btn btn-outline-primary" href="@item.Url">Seite öffnen</NavLink>
+                </div>
+            </div>
+        </div>
+    }
+
+</div>
+
+<hr class="mt-5" />
 
 <h2>Technologien</h2>
 <p>
@@ -21,3 +39,18 @@
 <footer class="text-muted mt-5">
     &copy; @DateTime.Now.Year Hugo Pawlowski – Alle Rechte vorbehalten.
 </footer>
+
+@code {
+    private List<NavItem> navItems = new()
+    {
+        new NavItem("OCR", "/OCR", "Texterkennung und PDF-Verarbeitung mit OCR."),
+        new NavItem("Wetter", "/Wetter", "Wetterdaten abrufen und anzeigen."),
+        new NavItem("Fusball", "/Fusball", "Fussballinfos und Statistiken."),
+        new NavItem("Swiss Teams", "/swissteams", "Infos zu Schweizer Teams."),
+        new NavItem("Sprachen", "/sprachen", "Texterkennung in mehreren Sprachen."),
+        new NavItem("Cards", "/cards", "Kartenverwaltung mit Upload-Scanner."),
+        new NavItem("Code Cleaner", "/codecleaner", "Code eingeben und formatieren.")
+    };
+
+    private record NavItem(string Title, string Url, string Description);
+}
