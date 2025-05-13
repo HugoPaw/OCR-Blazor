@@ -1,0 +1,87 @@
+﻿@page "/grundlagen"
+@inject BlazorProjekt.Services.AiService Ai
+
+<h3 class="mb-4">Grundlagen</h3>
+
+<div class="mb-3">
+    <label class="form-label">Titel</label>
+    <input type="text" class="form-control" @bind="newNote.Title" />
+</div>
+
+<div class="mb-3">
+    <label class="form-label">Notizen</label>
+    <textarea class="form-control" rows="3" @bind="newNote.Text"></textarea>
+</div>
+
+<div class="mb-3">
+    <label class="form-label">Code</label>
+    <textarea class="form-control font-monospace" rows="8" @bind="newNote.Code"></textarea>
+</div>
+
+<button class="btn btn-primary" @onclick="SaveNote">Speichern</button>
+
+<hr class="my-5" />
+
+@foreach (var note in notes)
+{
+    <div class="card mb-4 shadow-sm">
+        <div class="card-body">
+            <h5 class="card-title">@note.Title</h5>
+            <p class="card-text">@note.Text</p>
+
+            @if (!string.IsNullOrWhiteSpace(note.AiTip))
+            {
+                <div class="alert alert-info mt-3">
+                    <strong>AI-Tipp zum Thema:</strong><br />
+                    @note.AiTip
+                </div>
+            }
+
+            <pre class="bg-light p-3 border rounded">
+                @FormatCodeWithLineNumbers(note.Code)
+                </pre>
+        </div>
+    </div>
+}
+
+@code {
+    private List<Note> notes = new();
+    private Note newNote = new();
+
+    private async Task SaveNote()
+    {
+        if (!string.IsNullOrWhiteSpace(newNote.Title))
+        {
+            var aiTip = await Ai.GetTipAsync(newNote.Title);
+
+            notes.Add(new Note
+                {
+                    Title = newNote.Title,
+                    Text = newNote.Text,
+                    Code = newNote.Code,
+                    AiTip = aiTip
+                });
+
+            newNote = new();
+        }
+    }
+
+    private string FormatCodeWithLineNumbers(string code)
+    {
+        var lines = code.Split('\n');
+        var formatted = new System.Text.StringBuilder();
+        for (int i = 0; i < lines.Length; i++)
+        {
+            formatted.AppendLine($"{i + 1,3}: {lines[i]}");
+        }
+        return formatted.ToString();
+    }
+
+    private class Note
+    {
+        public string Title { get; set; } = "";
+        public string Text { get; set; } = "";
+        public string Code { get; set; } = "";
+        public string AiTip { get; set; } = "";
+    }
+}

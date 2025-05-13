@@ -2,6 +2,7 @@
 using BlazorProjekt.Services;
 using Microsoft.AspNetCore.Http.Features;
 
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Razor Components + Blazor Server + Fehlerdetails aktivieren
@@ -22,6 +23,9 @@ builder.Services.AddScoped<OcrService>();
 
 // HttpClient aktivieren (z. B. für Wetter-API)
 builder.Services.AddHttpClient();
+
+builder.Services.AddScoped<AiService>();
+
 
 var app = builder.Build();
 
