@@ -1,0 +1,58 @@
+﻿@page "/song"
+@inject HttpClient Http
+
+<h3 class="mb-4 text-xl">Video Upload und Konvertierung</h3>
+
+<InputFile OnChange="HandleFileSelected" />
+<select @bind="selectedOption" class="block mt-2 p-2 border rounded">
+    <option value="mp3">Zu MP3 konvertieren</option>
+    <option value="text">Zu Text transkribieren</option>
+</select>
+
+<button @onclick="UploadFile" class="mt-3 px-4 py-2 bg-blue-600 text-white rounded">Start</button>
+
+<p class="mt-4 text-sm text-gray-700">@status</p>
+
+@code {
+    IBrowserFile selectedFile;
+    string selectedOption = "mp3";
+    string status = "";
+
+    async Task HandleFileSelected(InputFileChangeEventArgs e)
+    {
+        selectedFile = e.File;
+        if (selectedFile.Size > 10L * 1024 * 1024 * 1024) // 10 GB
+        {
+            status = "Datei zu groß (max. 10 GB erlaubt)";
+            selectedFile = null;
+        }
+        else
+        {
+            status = $"Datei ausgewählt: {selectedFile.Name}";
+        }
+    }
+
+    async Task UploadFile()
+    {
+        if (selectedFile == null)
+        {
+            status = "Bitte zuerst eine Datei auswählen.";
+            return;
+        }
+
+        try
+        {
+            var content = new MultipartFormDataContent();
+            var stream = selectedFile.OpenReadStream(maxAllowedSize: 10L * 1024 * 1024 * 1024);
+            content.Add(new StreamContent(stream), "file", selectedFile.Name);
+            content.Add(new StringContent(selectedOption), "type");
+
+            var response = await Http.PostAsync("/api/upload", content);
+            status = response.IsSuccessStatusCode ? "Datei erfolgreich hochgeladen." : "Fehler beim Upload.";
+        }
+        catch (Exception ex)
+        {
+            status = $"Fehler: {ex.Message}";
+        }
+    }
+}
