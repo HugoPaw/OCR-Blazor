@@ -14,7 +14,6 @@
     <link href="bootstrap/bootstrap.min.css" rel="stylesheet" />
     <link href="app.css" rel="stylesheet" />
     <link href="WetterStyleSheet.css" rel="stylesheet" />
-    <!-- Chart.js einbinden -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
@@ -25,36 +24,33 @@
     <!-- Blazor Framework -->
     <script src="_framework/blazor.server.js"></script>
 
-    <!-- Wichtig: Script mit window.WETTER Namespace -->
+    <!-- Ball-Steuerung -->
+    <script src="js/ball.js"></script>
+
+
+    <!-- Wetter-Chart -->
     <script>
         window.WETTER = {
             chart: null,
-
-            drawWeatherChart: function(labels, data) {
+            drawWeatherChart: function (labels, data) {
                 console.log("WETTER.drawWeatherChart aufgerufen", labels, data);
-
                 const canvas = document.getElementById('weatherChart');
                 if (!canvas) {
                     console.error("Canvas-Element 'weatherChart' nicht gefunden!");
                     return false;
                 }
 
-                // Warten auf DOM-Rendering
                 setTimeout(() => {
                     try {
                         const ctx = canvas.getContext('2d');
-
-                        // Alten Chart zerstören, wenn vorhanden
                         if (window.WETTER.chart) {
                             window.WETTER.chart.destroy();
                         }
 
-                        // Farbgradient für die Füllung
                         const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
                         gradient.addColorStop(0, 'rgba(66, 165, 245, 0.7)');
                         gradient.addColorStop(1, 'rgba(66, 165, 245, 0.1)');
 
-                        // Chart erstellen
                         window.WETTER.chart = new Chart(ctx, {
                             type: 'line',
                             data: {
@@ -104,10 +100,10 @@
                                         padding: 12,
                                         displayColors: false,
                                         callbacks: {
-                                            title: function(tooltipItems) {
+                                            title: function (tooltipItems) {
                                                 return tooltipItems[0].label + ' Uhr';
                                             },
-                                            label: function(context) {
+                                            label: function (context) {
                                                 return context.raw + '°C';
                                             }
                                         }
@@ -152,7 +148,7 @@
                                                 family: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
                                                 size: 12
                                             },
-                                            callback: function(value) {
+                                            callback: function (value) {
                                                 return value + '°C';
                                             }
                                         }
@@ -169,7 +165,7 @@
                     } catch (err) {
                         console.error("Fehler beim Erstellen des Charts:", err);
                     }
-                }, 500); // Längere Verzögerung, um sicherzustellen, dass das DOM vollständig gerendert ist
+                }, 500);
 
                 return true;
             }

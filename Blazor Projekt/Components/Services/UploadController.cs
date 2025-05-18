@@ -16,36 +16,61 @@ public class UploadController : ControllerBase
     public async Task<IActionResult> Post([FromForm] IFormFile file, [FromForm] string type)
     {
         if (file == null || file.Length == 0)
-            return BadRequest("Keine Datei.");
+            return BadRequest("Keine Datei empfangen.");
 
-        var uploads = Path.Combine(_env.ContentRootPath, "Uploads");
-        Directory.CreateDirectory(uploads);
-        var filePath = Path.Combine(uploads, file.FileName);
+        // Zielordner erstellen
+        var uploadsPath = Path.Combine(_env.ContentRootPath, "Uploads");
+        Directory.CreateDirectory(uploadsPath);
+        var inputPath = Path.Combine(uploadsPath, file.FileName);
 
-        using (var stream = new FileStream(filePath, FileMode.Create))
+        // Datei speichern
+        using (var stream = new FileStream(inputPath, FileMode.Create))
         {
             await file.CopyToAsync(stream);
         }
 
         if (type == "mp3")
         {
-            // ffmpeg aufrufen
-            var mp3Path = Path.ChangeExtension(filePath, ".mp3");
-            var process = Process.Start(new ProcessStartInfo
+            var mp3Path = Path.ChangeExtension(inputPath, ".mp3");
+
+            var startInfo = new ProcessStartInfo
             {
                 FileName = "ffmpeg",
-                Arguments = $"-i \"{filePath}\" \"{mp3Path}\"",
+                Arguments = $"-i \"{inputPath}\" \"{mp3Path}\"",
                 RedirectStandardOutput = true,
+                RedirectStandardError = true,
                 UseShellExecute = false,
                 CreateNoWindow = true
-            });
-            process.WaitForExit();
+            };
+
+            try
+            {
+                var process = Process.Start(startInfo);
+                string output = await process.StandardError.ReadToEndAsync(); // FFMPEG schreibt in stderr
+                process.WaitForExit();
+
+                if (process.ExitCode != 0)
+                    return StatusCode(500, $"FFMPEG-Fehler: {output}");
+
+                return Ok(new { message = "MP3 erfolgreich erstellt.", file = Path.GetFileName(mp3Path) });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Fehler beim Konvertieren: {ex.Message}");
+            }
         }
         else if (type == "text")
         {
-            // z.B. Whisper aufrufen oder eine Speech-to-Text-API verwenden
+            // 🧪 Platzhalter-Transkription – später durch echte Speech-to-Text-Logik ersetzen
+            string dummyTranscription = $"[Mock-Transkript] Transkription von Datei '{file.FileName}' erfolgreich simuliert.";
+
+            return Ok(new
+            {
+                message = "Transkription abgeschlossen.",
+                text = dummyTranscription
+            });
         }
 
-        return Ok();
+        return BadRequest("Unbekannter Typ.");
     }
 }

@@ -9,18 +9,29 @@
     <option value="text">Zu Text transkribieren</option>
 </select>
 
-<button @onclick="UploadFile" class="mt-3 px-4 py-2 bg-blue-600 text-white rounded">Start</button>
+<button @onclick="UploadFile" class="mt-3 px-4 py-2 bg-blue-600 text-white rounded" disabled="@isUploading">Start</button>
 
 <p class="mt-4 text-sm text-gray-700">@status</p>
+
+@if (!string.IsNullOrWhiteSpace(transcribedText))
+{
+    <div class="mt-4 p-3 border rounded bg-gray-50">
+        <strong>Transkript:</strong>
+        <p>@transcribedText</p>
+    </div>
+}
 
 @code {
     IBrowserFile selectedFile;
     string selectedOption = "mp3";
     string status = "";
+    string transcribedText = "";
+    bool isUploading = false;
 
     async Task HandleFileSelected(InputFileChangeEventArgs e)
     {
         selectedFile = e.File;
+        transcribedText = "";
         if (selectedFile.Size > 10L * 1024 * 1024 * 1024) // 10 GB
         {
             status = "Datei zu groß (max. 10 GB erlaubt)";
@@ -40,6 +51,10 @@
             return;
         }
 
+        isUploading = true;
+        status = "Upload läuft...";
+        transcribedText = "";
+
         try
         {
             var content = new MultipartFormDataContent();
@@ -48,11 +63,29 @@
             content.Add(new StringContent(selectedOption), "type");
 
             var response = await Http.PostAsync("/api/upload", content);
-            status = response.IsSuccessStatusCode ? "Datei erfolgreich hochgeladen." : "Fehler beim Upload.";
+
+            if (response.IsSuccessStatusCode)
+            {
+                if (selectedOption == "text")
+                {
+                    var result = await response.Content.ReadFromJsonAsync<Dictionary<string, string>>();
+                    result?.TryGetValue("text", out transcribedText);
+                }
+
+                status = "Datei erfolgreich hochgeladen.";
+            }
+            else
+            {
+                status = "Fehler beim Upload.";
+            }
         }
         catch (Exception ex)
         {
             status = $"Fehler: {ex.Message}";
+        }
+        finally
+        {
+            isUploading = false;
         }
     }
 }

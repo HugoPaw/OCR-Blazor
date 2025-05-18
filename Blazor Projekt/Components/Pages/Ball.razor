@@ -1,0 +1,24 @@
+﻿@page "/ball"
+
+<h3 class="mb-4 text-xl">3D-Ball Steuerung</h3>
+
+<div id="scene">
+    <div id="ball3d"></div>
+</div>
+
+<div class="mt-4 flex gap-2">
+    <button @onclick="@(() => Rotate("up"))">⬆️</button>
+    <button @onclick="@(() => Rotate("left"))">⬅️</button>
+    <button @onclick="@(() => Rotate("right"))">➡️</button>
+    <button @onclick="@(() => Rotate("down"))">⬇️</button>
+</div>
+
+
+@code {
+    void Rotate(string direction)
+    {
+        _ = JS.InvokeVoidAsync("rotateBall", direction);
+    }
+
+    [Inject] IJSRuntime JS { get; set; }
+}
