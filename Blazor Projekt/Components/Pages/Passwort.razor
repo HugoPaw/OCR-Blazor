@@ -1,0 +1,71 @@
+﻿@page "/passwort"
+
+@using System.Text
+
+<h2 class="title">🔐 Passwort Generator</h2>
+
+<div class="generator-container">
+    <div class="controls">
+        <label>
+            Länge:
+            <input type="number" min="4" max="50" @bind="passwordLength" />
+        </label>
+
+        <label><input type="checkbox" @bind="useUpper" /> Großbuchstaben</label>
+        <label><input type="checkbox" @bind="useLower" /> Kleinbuchstaben</label>
+        <label><input type="checkbox" @bind="useNumbers" /> Zahlen</label>
+        <label><input type="checkbox" @bind="useSymbols" /> Sonderzeichen</label>
+
+        <button class="generate-btn" @onclick="GeneratePassword">🔁 Generieren</button>
+    </div>
+
+    @if (!string.IsNullOrEmpty(generatedPassword))
+    {
+        <div class="output">
+            <input class="output-field" readonly value="@generatedPassword" />
+            <button class="copy-btn" @onclick="CopyToClipboard">📋 Kopieren</button>
+        </div>
+    }
+</div>
+
+@code {
+    int passwordLength = 12;
+    bool useUpper = true;
+    bool useLower = true;
+    bool useNumbers = true;
+    bool useSymbols = false;
+
+    string generatedPassword = "";
+
+    void GeneratePassword()
+    {
+        const string upper = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+        const string lower = "abcdefghijklmnopqrstuvwxyz";
+        const string numbers = "0123456789";
+        const string symbols = "!@#$%^&*()_+-=[]{}|;:,.<>?";
+
+        var chars = new StringBuilder();
+        if (useUpper) chars.Append(upper);
+        if (useLower) chars.Append(lower);
+        if (useNumbers) chars.Append(numbers);
+        if (useSymbols) chars.Append(symbols);
+
+        if (chars.Length == 0)
+        {
+            generatedPassword = "Bitte mind. 1 Zeichentyp wählen!";
+            return;
+        }
+
+        var rand = new Random();
+        generatedPassword = new string(Enumerable.Range(0, passwordLength)
+            .Select(_ => chars[rand.Next(chars.Length)]).ToArray());
+    }
+
+    async Task CopyToClipboard()
+    {
+        await JS.InvokeVoidAsync("navigator.clipboard.writeText", generatedPassword);
+    }
+
+    [Inject]
+    private IJSRuntime JS { get; set; }
+}

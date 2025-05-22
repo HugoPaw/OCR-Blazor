@@ -1,23 +1,22 @@
 ﻿@page "/wetter"
-@using System.Text.Json.Serialization
 @inject HttpClient Http
 @inject IJSRuntime JS
 
 <div class="weather-container">
     <h3 class="weather-title">Wetter in Luzern</h3>
 
-    <div class="chart-container">
-        <canvas id="weatherChart"></canvas>
-    </div>
-
     @if (weatherData != null)
     {
+        <div class="chart-container">
+            <canvas id="weatherChart" width="400" height="250"></canvas>
+        </div>
+
         <ul class="temperature-list">
             @for (int i = 0; i < Math.Min(weatherData.Hourly.Time.Count, weatherData.Hourly.Temperature2m.Count); i++)
             {
                 var parsedTime = DateTime.Parse(weatherData.Hourly.Time[i]);
                 <li class="temperature-item">
-                    <span class="temperature-time">@parsedTime.ToString("dd.MM. HH:mm") Uhr:</span>
+                    <span class="temperature-time">@parsedTime:dd.MM. HH:mm Uhr:</span>
                     <span class="temperature-value">@weatherData.Hourly.Temperature2m[i] °C</span>
                 </li>
             }
@@ -25,9 +24,7 @@
     }
     else if (isError)
     {
-        <div class="error-message">
-            <p>Fehler beim Laden der Wetterdaten. Bitte versuchen Sie es später erneut.</p>
-        </div>
+        <div class="error-message">Fehler beim Laden der Wetterdaten. Bitte später erneut versuchen.</div>
     }
     else
     {
@@ -38,76 +35,49 @@
 @code {
     private WeatherResponse? weatherData;
     private bool isError = false;
-    private bool chartDrawn = false;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (firstRender)
+        if (!firstRender || weatherData != null) return;
+
+        try
         {
-            Console.WriteLine("[DEBUG] Wetterdaten werden geladen...");
-            try
+            var url = "https://api.open-meteo.com/v1/forecast?latitude=47.05&longitude=8.31&hourly=temperature_2m";
+            weatherData = await Http.GetFromJsonAsync<WeatherResponse>(url);
+
+            if (weatherData?.Hourly?.Time != null && weatherData.Hourly.Temperature2m != null)
             {
-                var url = "https://api.open-meteo.com/v1/forecast?latitude=47.05&longitude=8.31&hourly=temperature_2m";
-                weatherData = await Http.GetFromJsonAsync<WeatherResponse>(url);
+                var labels = weatherData.Hourly.Time
+                    .Take(24)
+                    .Select(t => DateTime.Parse(t).ToString("HH:mm"))
+                    .ToList();
 
-                if (weatherData?.Hourly?.Time != null && weatherData.Hourly.Temperature2m != null)
-                {
-                    // UI-Update erzwingen, damit Canvas im DOM ist
-                    StateHasChanged();
+                var values = weatherData.Hourly.Temperature2m.Take(24).ToList();
 
-                    // Längere Verzögerung für sicheres Canvas-Rendering
-                    await Task.Delay(500);
-
-                    var labels = weatherData.Hourly.Time
-                        .Take(24)
-                        .Select(t => DateTime.Parse(t).ToString("HH:mm"))
-                        .ToList();
-
-                    var values = weatherData.Hourly.Temperature2m.Take(24).ToList();
-
-                    Console.WriteLine("[DEBUG] JS wird aufgerufen mit Labels und Werten.");
-                    try
-                    {
-                        // WICHTIG: Geändert zu WETTER.drawWeatherChart
-                        await JS.InvokeVoidAsync("WETTER.drawWeatherChart", labels, values);
-                        Console.WriteLine("[DEBUG] JS-Aufruf erfolgreich.");
-                        chartDrawn = true;
-                    }
-                    catch (Exception jsEx)
-                    {
-                        Console.WriteLine($"[FEHLER] JavaScript-Funktion konnte nicht aufgerufen werden: {jsEx.Message}");
-                        isError = true;
-                        StateHasChanged();
-                    }
-                }
-                else
-                {
-                    Console.WriteLine("[FEHLER] Zeit- oder Temperaturdaten fehlen.");
-                    isError = true;
-                    StateHasChanged();
-                }
+                await Task.Delay(200); // Canvas-Sicherheit
+                await JS.InvokeVoidAsync("WETTER.drawWeatherChart", labels, values);
             }
-            catch (Exception ex)
+            else
             {
-                Console.WriteLine($"[FEHLER] Wetterdaten konnten nicht geladen werden: {ex.Message}");
                 isError = true;
-                StateHasChanged();
             }
         }
+        catch
+        {
+            isError = true;
+        }
+
+        StateHasChanged();
     }
 
     public class WeatherResponse
     {
-        [JsonPropertyName("hourly")]
         public Hourly Hourly { get; set; } = new();
     }
 
     public class Hourly
     {
-        [JsonPropertyName("time")]
         public List<string> Time { get; set; } = new();
-
-        [JsonPropertyName("temperature_2m")]
         public List<double> Temperature2m { get; set; } = new();
     }
 }

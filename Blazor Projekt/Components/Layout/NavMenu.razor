@@ -1,12 +1,14 @@
 ﻿@code {
     Dictionary<string, bool> toggles = new()
-    {
-        { "Texterkennung", false },
-        { "AITools", false },
-        { "Projekte", false },
-        { "Sport", false },
-        { "Lernen", false }
-    };
+{
+    { "Texterkennung", false },
+    { "AITools", false },
+    { "Projekte", false },
+    { "Sport", false },
+    { "Lernen", false },
+    { "Sicherheit", false } // <--- HIER HINZUGEFÜGT
+};
+
 
     void Toggle(string section) => toggles[section] = !toggles[section];
 }
@@ -74,6 +76,17 @@
         {
             <div class="nav-sub">
                 <NavLink class="nav-link" href="/grundlagen">Grundlagen</NavLink>
+            </div>
+        }
+    </div>
+    <div class="nav-group">
+        <button class="nav-header" @onclick='() => Toggle("Sicherheit")'>🔐 Sicherheit & Datenschutz</button>
+        @if (toggles["Sicherheit"])
+        {
+            <div class="nav-sub">
+                <NavLink class="nav-link" href="/passwort">Passwort Generator</NavLink>
+                <NavLink class="nav-link" href="/2fa">Zwei-Faktor-Login</NavLink>
+                <NavLink class="nav-link" href="/encrypt">Datenverschlüsselung</NavLink>
             </div>
         }
     </div>
