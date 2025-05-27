@@ -3,8 +3,8 @@
 <h1 class="display-4 mb-4">Willkommen bei Hugo's Entwickler-Portfolio</h1>
 
 <p class="lead">
-    Diese Webanwendung dient als Zentrale für meine Projekte – besonders im Bereich OCR, Blazor und GitHub-Integrationen.
-    Hier teste ich neue Ideen, experimentiere mit Technologien und dokumentiere meinen Fortschritt.
+    Diese Webanwendung dient als Zentrale für meine Projekte – insbesondere im Bereich OCR, Blazor und GitHub-Integrationen.
+    Hier experimentiere ich mit Technologien, entwickle Tools und dokumentiere meinen Fortschritt.
 </p>
 
 <hr class="mb-5" />
@@ -12,7 +12,6 @@
 <h2>Projekte & Tools</h2>
 
 <div class="row row-cols-1 row-cols-md-2 g-4 mt-3">
-
     @foreach (var item in navItems)
     {
         <div class="col">
@@ -25,16 +24,11 @@
             </div>
         </div>
     }
-
 </div>
 
 <hr class="mt-5" />
 
 <h2>Technologien</h2>
-<p>
-    Ich arbeite mit <strong>Blazor</strong>, <strong>.NET</strong>, <strong>GitHub</strong> und <strong>JavaScript</strong>.
-    Dieses Portfolio wird kontinuierlich erweitert und verbessert.
-</p>
 
 <footer class="text-muted mt-5">
     &copy; @DateTime.Now.Year Hugo Pawlowski – Alle Rechte vorbehalten.
@@ -45,12 +39,31 @@
     {
         new NavItem("OCR", "/OCR", "Texterkennung und PDF-Verarbeitung mit OCR."),
         new NavItem("Wetter", "/Wetter", "Wetterdaten abrufen und anzeigen."),
-        new NavItem("Fusball", "/Fusball", "Fussballinfos und Statistiken."),
+        new NavItem("Fussball", "/Fusball", "Fussballinfos und Statistiken."),
         new NavItem("Swiss Teams", "/swissteams", "Infos zu Schweizer Teams."),
         new NavItem("Sprachen", "/sprachen", "Texterkennung in mehreren Sprachen."),
         new NavItem("Cards", "/cards", "Kartenverwaltung mit Upload-Scanner."),
-        new NavItem("Code Cleaner", "/codecleaner", "Code eingeben und formatieren.")
+        new NavItem("Code Cleaner", "/codecleaner", "Code eingeben und automatisch formatieren."),
+        new NavItem("Song to MP3", "/song", "YouTube Songs in MP3 umwandeln."),
+        new NavItem("Lebenslauf", "/lebenslauf", "Mein Lebenslauf und Werdegang."),
+        new NavItem("3D Ball", "/ball", "Demo für 3D-Animation mit Blazor."),
+        new NavItem("Grundlagen", "/grundlagen", "Wichtige Informatik-Grundlagen."),
+        new NavItem("Passwort Generator", "/passwort", "Sichere Passwörter generieren."),
+        new NavItem("2FA Login", "/qrcode", "Zwei-Faktor-Login mit QR Code."),
+        new NavItem("Datenverschlüsselung", "/encrypt", "Einfaches Tool zur Verschlüsselung.")
     };
 
     private record NavItem(string Title, string Url, string Description);
+
+    Dictionary<string, bool> toggles = new()
+    {
+        { "Texterkennung", false },
+        { "AITools", false },
+        { "Projekte", false },
+        { "Sport", false },
+        { "Lernen", false },
+        { "Sicherheit", false }
+    };
+
+    void Toggle(string section) => toggles[section] = !toggles[section];
 }
