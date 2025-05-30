@@ -6,7 +6,8 @@
     { "Projekte", false },
     { "Sport", false },
     { "Lernen", false },
-    { "Sicherheit", false } 
+    { "Sicherheit", false }, 
+    { "Spiele", false }
 };
 
 
@@ -87,6 +88,16 @@
                 <NavLink class="nav-link" href="/passwort">Passwort Generator</NavLink>
                 <NavLink class="nav-link" href="/qrcode">Zwei-Faktor-Login</NavLink>
                 <NavLink class="nav-link" href="/encrypt">Datenverschlüsselung</NavLink>
+            </div>
+        }
+    </div>
+    <div class="nav-group">
+        <button class="nav-header" @onclick='() => Toggle("Spiele")'>Spiele</button>
+        @if (toggles["Spiele"])
+        {
+            <div class="nav-sub">
+                <NavLink class="nav-link" href="/BJ">Black Jack</NavLink>
+               
             </div>
         }
     </div>

@@ -1,1 +1,127 @@
 ﻿@page "/BJ"
+
+<h3>Blackjack</h3>
+
+<div>
+    <p><strong>Deine Karten:</strong> @string.Join(", ", PlayerHand) (@PlayerTotal)</p>
+    <p><strong>Dealer zeigt:</strong> @string.Join(", ", GameOver ? DealerHand : DealerHand.Take(1)) @(GameOver ? $"({DealerTotal})" : "")</p>
+
+    @if (!GameOver)
+    {
+        <button @onclick="Hit">Hit</button>
+        <button @onclick="Stand">Stand</button>
+    }
+    else
+    {
+        <p><strong>@ResultMessage</strong></p>
+        <button @onclick="Restart">Neustart</button>
+    }
+</div>
+
+@code {
+    private List<string> Deck = new();
+    private List<string> PlayerHand = new();
+    private List<string> DealerHand = new();
+
+    private bool GameOver = false;
+    private string ResultMessage = "";
+
+    private static readonly Dictionary<string, int> CardValues = new()
+        {
+            ["2"] = 2,
+            ["3"] = 3,
+            ["4"] = 4,
+            ["5"] = 5,
+            ["6"] = 6,
+            ["7"] = 7,
+            ["8"] = 8,
+            ["9"] = 9,
+            ["10"] = 10,
+            ["J"] = 10,
+            ["Q"] = 10,
+            ["K"] = 10,
+            ["A"] = 11
+        };
+
+    protected override void OnInitialized()
+    {
+        Restart();
+    }
+
+    private void Restart()
+    {
+        var cards = new[] { "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K", "A" };
+        Deck = Enumerable.Repeat(cards, 4).SelectMany(c => c).OrderBy(_ => Guid.NewGuid()).ToList();
+
+        PlayerHand = new() { DrawCard(), DrawCard() };
+        DealerHand = new() { DrawCard(), DrawCard() };
+        GameOver = false;
+        ResultMessage = "";
+
+		if (PlayerTotal == 21)
+		{
+			GameOver = true;
+			ResultMessage = "Blackjack! Du hast gewonnen!";
+		}
+    }
+
+    private string DrawCard()
+    {
+        var card = Deck.First();
+        Deck.RemoveAt(0);
+        return card;
+    }
+
+    private int CalculateTotal(List<string> hand)
+    {
+        int total = hand.Sum(c => CardValues[c]);
+        int aces = hand.Count(c => c == "A");
+
+        while (total > 21 && aces-- > 0)
+        {
+            total -= 10; // A = 1 statt 11
+        }
+
+        return total;
+    }
+
+    private int PlayerTotal => CalculateTotal(PlayerHand);
+    private int DealerTotal => CalculateTotal(DealerHand);
+
+    private void Hit()
+    {
+        PlayerHand.Add(DrawCard());
+
+        if (PlayerTotal > 21)
+        {
+            GameOver = true;
+            ResultMessage = "Busted! Du hast verloren.";
+        }
+    }
+
+    private void Stand()
+    {
+        while (CalculateTotal(DealerHand) < 17)
+        {
+            DealerHand.Add(DrawCard());
+        }
+
+        GameOver = true;
+
+        int player = CalculateTotal(PlayerHand);
+        int dealer = CalculateTotal(DealerHand);
+
+        if (dealer > 21 || player > dealer)
+        {
+            ResultMessage = "Du hast gewonnen!";
+        }
+        else if (dealer == player)
+        {
+            ResultMessage = "Unentschieden.";
+        }
+        else
+        {
+            ResultMessage = "Dealer gewinnt.";
+        }
+    }
+}
