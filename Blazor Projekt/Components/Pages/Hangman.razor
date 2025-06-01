@@ -1,37 +1,88 @@
 ﻿@page "/Hangman"
+@inject HttpClient Http
 
 <h3>Hangman</h3>
 
-<p>Wort: @GetMaskedWord()</p>
-<p>Fehlversuche: @WrongGuesses / @MaxErrors</p>
-
-@if (!GameOver)
+@if (!GameStarted)
 {
-    <p>
-        <input @bind="CurrentGuess" @bind:event="oninput" maxlength="1" />
-        <button @onclick="GuessLetter">Rate</button>
-    </p>
+    <p>Wähle die Anzahl Wörter:</p>
+
+    <select @bind="SelectedWordCount">
+        @for (int i = 5; i <= 12; i++)
+        {
+            <option value="@i">@i Wörter</option>
+        }
+    </select>
+
+    <button @onclick="StartGame">Start</button>
+    @if (Loading)
+    {
+        <p>Lade Wörter...</p>
+    }
+    @if (Error != null)
+    {
+        <p style="color:red;">Fehler beim Laden: @Error</p>
+    }
 }
 else
 {
-    <p>@(Won ? "Gewonnen!" : $"Verloren! Das Wort war: {Word}")</p>
-    <button @onclick="ResetGame">Neues Spiel</button>
+    <p>Wort: @GetMaskedWord()</p>
+    <p>Fehlversuche: @WrongGuesses / @MaxErrors</p>
+
+    @if (!GameOver)
+    {
+        <input @bind="CurrentGuess" @bind:event="oninput" maxlength="1" />
+        <button @onclick="GuessLetter">Rate</button>
+    }
+    else
+    {
+        <p>@(Won ? "Gewonnen!" : $"Verloren! Das Wort war: {Word}")</p>
+        <button @onclick="ResetGame">Neues Spiel</button>
+    }
 }
 
 @code {
-    private string[] WordPool = new[] { "banane", "programm", "katze", "flugzeug", "tunnel", "rechner" };
+    private List<string> WordPool = new();
     private string Word;
     private HashSet<char> GuessedLetters = new();
     private string CurrentGuess = "";
     private int WrongGuesses = 0;
     private const int MaxErrors = 6;
+    private bool GameStarted = false;
+    private int SelectedWordCount = 5;
+    private bool Loading = false;
+    private string Error;
+
     private bool GameOver => Won || Lost;
     private bool Won => Word.All(c => GuessedLetters.Contains(c));
     private bool Lost => WrongGuesses >= MaxErrors;
 
-    protected override void OnInitialized()
+    private async Task StartGame()
     {
-        ResetGame();
+        GameStarted = false;
+        Loading = true;
+        Error = null;
+
+        try
+        {
+            var url = $"https://random-word-api.herokuapp.com/word?number={SelectedWordCount}&lang=de";
+            WordPool = await Http.GetFromJsonAsync<List<string>>(url);
+
+            var rng = new Random();
+            Word = WordPool[rng.Next(WordPool.Count)].ToLower();
+
+            GuessedLetters.Clear();
+            WrongGuesses = 0;
+            CurrentGuess = "";
+            GameStarted = true;
+        }
+        catch (Exception ex)
+        {
+            Error = ex.Message;
+        }
+
+        Loading = false;
+        StateHasChanged();
     }
 
     private void GuessLetter()
@@ -40,11 +91,9 @@ else
 
         char guess = char.ToLower(CurrentGuess[0]);
         CurrentGuess = "";
-
         if (!char.IsLetter(guess) || GuessedLetters.Contains(guess)) return;
 
         GuessedLetters.Add(guess);
-
         if (!Word.Contains(guess))
             WrongGuesses++;
     }
@@ -56,10 +105,12 @@ else
 
     private void ResetGame()
     {
-        var rng = new Random();
-        Word = WordPool[rng.Next(WordPool.Length)];
+        GameStarted = false;
+        Word = "";
         GuessedLetters.Clear();
         WrongGuesses = 0;
         CurrentGuess = "";
+        SelectedWordCount = 5;
+        Error = null;
     }
 }
