@@ -15,6 +15,7 @@
     </select>
 
     <button @onclick="StartGame">Start</button>
+
     @if (Loading)
     {
         <p>Lade Wörter...</p>
@@ -28,6 +29,7 @@ else
 {
     <p>Wort: @GetMaskedWord()</p>
     <p>Fehlversuche: @WrongGuesses / @MaxErrors</p>
+    <p>Benutzte Buchstaben: @string.Join(", ", GuessedLetters.OrderBy(c => c))</p>
 
     @if (!GameOver)
     {
@@ -91,9 +93,11 @@ else
 
         char guess = char.ToLower(CurrentGuess[0]);
         CurrentGuess = "";
+
         if (!char.IsLetter(guess) || GuessedLetters.Contains(guess)) return;
 
         GuessedLetters.Add(guess);
+
         if (!Word.Contains(guess))
             WrongGuesses++;
     }
