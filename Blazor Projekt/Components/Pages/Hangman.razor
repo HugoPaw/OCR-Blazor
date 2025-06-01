@@ -1,0 +1,65 @@
+﻿@page "/Hangman"
+
+<h3>Hangman</h3>
+
+<p>Wort: @GetMaskedWord()</p>
+<p>Fehlversuche: @WrongGuesses / @MaxErrors</p>
+
+@if (!GameOver)
+{
+    <p>
+        <input @bind="CurrentGuess" @bind:event="oninput" maxlength="1" />
+        <button @onclick="GuessLetter">Rate</button>
+    </p>
+}
+else
+{
+    <p>@(Won ? "Gewonnen!" : $"Verloren! Das Wort war: {Word}")</p>
+    <button @onclick="ResetGame">Neues Spiel</button>
+}
+
+@code {
+    private string[] WordPool = new[] { "banane", "programm", "katze", "flugzeug", "tunnel", "rechner" };
+    private string Word;
+    private HashSet<char> GuessedLetters = new();
+    private string CurrentGuess = "";
+    private int WrongGuesses = 0;
+    private const int MaxErrors = 6;
+    private bool GameOver => Won || Lost;
+    private bool Won => Word.All(c => GuessedLetters.Contains(c));
+    private bool Lost => WrongGuesses >= MaxErrors;
+
+    protected override void OnInitialized()
+    {
+        ResetGame();
+    }
+
+    private void GuessLetter()
+    {
+        if (string.IsNullOrWhiteSpace(CurrentGuess)) return;
+
+        char guess = char.ToLower(CurrentGuess[0]);
+        CurrentGuess = "";
+
+        if (!char.IsLetter(guess) || GuessedLetters.Contains(guess)) return;
+
+        GuessedLetters.Add(guess);
+
+        if (!Word.Contains(guess))
+            WrongGuesses++;
+    }
+
+    private string GetMaskedWord()
+    {
+        return string.Join(" ", Word.Select(c => GuessedLetters.Contains(c) ? c : '_'));
+    }
+
+    private void ResetGame()
+    {
+        var rng = new Random();
+        Word = WordPool[rng.Next(WordPool.Length)];
+        GuessedLetters.Clear();
+        WrongGuesses = 0;
+        CurrentGuess = "";
+    }
+}
