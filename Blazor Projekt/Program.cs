@@ -12,24 +12,21 @@ builder.Services.AddRazorComponents()
 // Upload-Limit erhöhen (z. B. 15 MB)
 builder.Services.Configure<FormOptions>(options =>
 {
-    options.MultipartBodyLengthLimit = 15 * 1024 * 1024; // 15 MB
+    options.MultipartBodyLengthLimit = 15 * 1024 * 1024;
 });
 
-// OCR-bezogene Services registrieren
+// OCR-Services
 builder.Services.AddScoped<PdfTextExtractor>();
 builder.Services.AddScoped<ImageTextExtractor>();
 builder.Services.AddScoped<OcrService>();
 
-// AI-Service registrieren
+// AI-Service
 builder.Services.AddScoped<AiService>();
 
-// HttpClient mit BaseAddress für Uploads etc.
-builder.Services.AddScoped(sp => new HttpClient
-{
-    BaseAddress = new Uri("https://localhost:7115") // Passe ggf. den Port an
-});
+// HttpClient für API-Zugriffe
+builder.Services.AddHttpClient();
 
-// API-Controller aktivieren (z. B. UploadController)
+// Controller aktivieren
 builder.Services.AddControllers();
 
 var app = builder.Build();
@@ -43,8 +40,7 @@ if (!app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 app.UseStaticFiles();
-app.UseRouting(); // nötig für Controller
-
+app.UseRouting();
 app.UseAntiforgery();
 
 // API-Routen aktivieren

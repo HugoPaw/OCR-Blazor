@@ -1,0 +1,42 @@
+﻿@page "/Nasa"
+@inject HttpClient Http
+@using System.Net.Http.Json
+
+<h3>NASA: Astronomy Picture of the Day</h3>
+
+@if (apodData == null)
+{
+    <p>Lade Bild des Tages...</p>
+}
+else
+{
+    <div>
+        <h4>@apodData.title (@apodData.date)</h4>
+        <img src="@apodData.url" alt="NASA Bild des Tages" style="max-width: 100%; border-radius: 10px;" />
+        <p style="margin-top: 1rem;">@apodData.explanation</p>
+    </div>
+}
+
+@code {
+    private ApodData? apodData;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            apodData = await Http.GetFromJsonAsync<ApodData>("/api/nasa/apod");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Fehler beim Laden der APOD-Daten: {ex.Message}");
+        }
+    }
+
+    public class ApodData
+    {
+        public string title { get; set; } = "";
+        public string explanation { get; set; } = "";
+        public string url { get; set; } = "";
+        public string date { get; set; } = "";
+    }
+}
