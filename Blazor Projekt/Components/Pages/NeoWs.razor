@@ -1,0 +1,78 @@
+﻿@page "/neoWs"
+@inject HttpClient Http
+@inject IConfiguration Config
+
+<h3>Erdnahe Asteroiden (NASA NeoWs)</h3>
+
+@if (neoDaten == null)
+{
+    <p>Lade Daten...</p>
+}
+else
+{
+    @foreach (var dateGroup in neoDaten.near_earth_objects)
+    {
+        <h4>@dateGroup.Key</h4>
+        <ul>
+            @foreach (var asteroid in dateGroup.Value)
+            {
+                <li>
+                    <strong>@asteroid.name</strong> – Durchmesser: @GetDurchmesser(asteroid) m –
+                    <span style="color: @(asteroid.is_potentially_hazardous_asteroid ? "red" : "green")">
+                        @(asteroid.is_potentially_hazardous_asteroid ? "Gefährlich" : "Unbedenklich")
+                    </span>
+                </li>
+            }
+        </ul>
+    }
+}
+
+@code {
+    private NeoResponse? neoDaten;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var apiKey = Config["NASA_API_KEY"];
+            var start = "2024-06-01";
+            var end = "2024-06-07";
+            var url = $"https://api.nasa.gov/neo/rest/v1/feed?start_date={start}&end_date={end}&api_key={apiKey}";
+
+            neoDaten = await Http.GetFromJsonAsync<NeoResponse>(url);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Fehler beim Laden der NeoWs-Daten: {ex.Message}");
+        }
+    }
+
+    private double GetDurchmesser(NeoAsteroid asteroid)
+    {
+        var est = asteroid.estimated_diameter.meters;
+        return Math.Round((est.estimated_diameter_min + est.estimated_diameter_max) / 2, 1);
+    }
+
+    public class NeoResponse
+    {
+        public Dictionary<string, List<NeoAsteroid>> near_earth_objects { get; set; } = new();
+    }
+
+    public class NeoAsteroid
+    {
+        public string name { get; set; } = "";
+        public bool is_potentially_hazardous_asteroid { get; set; }
+        public DiameterData estimated_diameter { get; set; } = new();
+    }
+
+    public class DiameterData
+    {
+        public MeterRange meters { get; set; } = new();
+    }
+
+    public class MeterRange
+    {
+        public double estimated_diameter_min { get; set; }
+        public double estimated_diameter_max { get; set; }
+    }
+}

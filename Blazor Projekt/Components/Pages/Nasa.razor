@@ -1,6 +1,5 @@
 ﻿@page "/Nasa"
 @inject HttpClient Http
-@using System.Net.Http.Json
 
 <h3>NASA: Astronomy Picture of the Day</h3>
 
@@ -24,7 +23,7 @@ else
     {
         try
         {
-            apodData = await Http.GetFromJsonAsync<ApodData>("/api/nasa/apod");
+            apodData = await Http.GetFromJsonAsync<ApodData>("api/nasa/apod");
         }
         catch (Exception ex)
         {
