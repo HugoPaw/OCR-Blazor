@@ -1,0 +1,89 @@
+﻿@page "/Marsrover"
+@inject HttpClient Http
+@inject IConfiguration Config
+
+<h3>Mars Rover Fotos (Curiosity)</h3>
+
+<div>
+    <label>Datum wählen:</label>
+    <input type="date" @bind="selectedDate" max="@DateTime.Now.ToString("yyyy-MM-dd")" />
+    <button @onclick="LadeFotos">Fotos laden</button>
+</div>
+
+@if (isLoading)
+{
+    <p>Lade Bilder vom Mars...</p>
+}
+else if (photos == null)
+{
+    <p>Keine Daten geladen.</p>
+}
+else if (photos.Count == 0)
+{
+    <p>Keine Fotos für dieses Datum gefunden.</p>
+}
+else
+{
+    <div>
+        <h4>@photos.Count Foto(s) von Curiosity am @selectedDate.ToString("yyyy-MM-dd")</h4>
+        @foreach (var photo in photos)
+        {
+            <div style="margin-bottom: 20px;">
+                <img src="@photo.img_src" alt="Mars Foto" style="max-width: 500px;" />
+                <p>Kamera: @photo.camera.full_name | Rover: @photo.rover.name</p>
+            </div>
+        }
+    </div>
+}
+
+@code {
+    private DateTime selectedDate = DateTime.Today.AddDays(-1); // Standard: gestern
+    private List<MarsPhoto>? photos;
+    private bool isLoading = false;
+
+    private async Task LadeFotos()
+    {
+        try
+        {
+            isLoading = true;
+            photos = null;
+
+            var dateStr = selectedDate.ToString("yyyy-MM-dd");
+            var apiKey = Config["NASA_API_KEY"];
+            var url = $"https://api.nasa.gov/mars-photos/api/v1/rovers/curiosity/photos?earth_date={dateStr}&api_key={apiKey}";
+
+            var response = await Http.GetFromJsonAsync<MarsPhotoResponse>(url);
+            photos = response?.photos ?? new();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Fehler beim Laden der Marsfotos: {ex.Message}");
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    public class MarsPhotoResponse
+    {
+        public List<MarsPhoto> photos { get; set; } = new();
+    }
+
+    public class MarsPhoto
+    {
+        public string img_src { get; set; } = "";
+        public Camera camera { get; set; } = new();
+        public Rover rover { get; set; } = new();
+    }
+
+    public class Camera
+    {
+        public string full_name { get; set; } = "";
+    }
+
+    public class Rover
+    {
+        public string name { get; set; } = "";
+    }
+}
