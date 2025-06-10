@@ -136,3 +136,23 @@ h1:focus {
     background-color: rgba(255, 255, 255, 0.1);
     border-radius: 4px;
 }
+.darkmode-toggle {
+    margin-left: auto;
+    padding: 6px 12px;
+    background-color: #ddd;
+    border: none;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+#main-content.dark-mode {
+    background-color: #121212;
+    color: #f0f0f0;
+}
+
+    #main-content.dark-mode input,
+    #main-content.dark-mode textarea {
+        background-color: #1e1e1e;
+        color: white;
+        border: 1px solid #555;
+    }

@@ -194,3 +194,25 @@ h1:focus {
     border-radius: 6px;
     cursor: pointer;
 }
+
+.darkmode-toggle {
+    margin-left: auto;
+    padding: 6px 12px;
+    background-color: #ddd;
+    border: none;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+#main-content.dark-mode {
+    background-color: #121212;
+    color: #f0f0f0;
+}
+
+    #main-content.dark-mode input,
+    #main-content.dark-mode textarea,
+    #main-content.dark-mode select {
+        background-color: #1e1e1e;
+        color: white;
+        border: 1px solid #555;
+    }

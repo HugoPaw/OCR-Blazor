@@ -1,23 +1,12 @@
-﻿@page "/"
-@namespace BlazorProjekt.Pages
-@using BlazorProjekt.Components
-@addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
-@{
-    Layout = null;
-}
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="de">
 <head>
     <meta charset="utf-8" />
     <title>BlazorProjekt</title>
     <base href="~/" />
-
-    <!-- CSS -->
     <link href="bootstrap/bootstrap.min.css" rel="stylesheet" />
     <link href="app.css" rel="stylesheet" />
     <link href="WetterStyleSheet.css" rel="stylesheet" />
-
-    <!-- Chart.js (für Wetter-Chart) -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
@@ -25,12 +14,12 @@
         <component type="typeof(App)" render-mode="ServerPrerendered" />
     </app>
 
-    <!-- Blazor Server Framework -->
+    <!-- Blazor Framework -->
     <script src="_framework/blazor.server.js"></script>
 
-    <!-- Eigene JavaScript-Dateien -->
+    <!-- Eigene Scripts -->
     <script src="js/ball.js"></script>
-    <script src="weather.js"></script> <!-- Pfad anpassen, falls weather.js in Unterordner liegt -->
-
+    <script src="weather.js"></script>
+    <script src="/darkmode.js"></script>
 </body>
 </html>
