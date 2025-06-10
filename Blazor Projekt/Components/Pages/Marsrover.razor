@@ -2,7 +2,7 @@
 @inject HttpClient Http
 @inject IConfiguration Config
 
-<h3>Mars Rover Fotos (Curiosity)</h3>
+<h3>Mars Rover Fotos </h3>
 
 <div>
     <label>Datum wählen:</label>
@@ -12,20 +12,20 @@
 
 @if (isLoading)
 {
-    <p>Lade Bilder vom Mars...</p>
+    <p>Lade Bilder vom Mars</p>
 }
 else if (photos == null)
 {
-    <p>Keine Daten geladen.</p>
+    <p>Keine Daten geladen</p>
 }
 else if (photos.Count == 0)
 {
-    <p>Keine Fotos für dieses Datum gefunden.</p>
+    <p>Keine Fotos für dieses Datum gefunden</p>
 }
 else
 {
     <div>
-        <h4>@photos.Count Foto(s) von Curiosity am @selectedDate.ToString("yyyy-MM-dd")</h4>
+        <h4>@photos.Count Foto(s) von  am @selectedDate.ToString("yyyy-MM-dd")</h4>
         @foreach (var photo in photos)
         {
             <div style="margin-bottom: 20px;">

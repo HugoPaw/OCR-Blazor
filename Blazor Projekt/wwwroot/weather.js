@@ -1,13 +1,8 @@
-﻿// weather.js - Muss im wwwroot-Verzeichnis liegen
-// WICHTIG: Datei als "weather.js" im wwwroot-Verzeichnis speichern
+﻿console.log("✅ Wetter-Script wird geladen...");
 
-console.log("✅ Wetter-Script wird geladen...");
-
-// Namespace-Objekt für Wetter-Funktionen
 window.WETTER = {
     chart: null,
 
-    // Funktion zum Zeichnen des Wetter-Charts
     drawWeatherChart: function (labels, data) {
         console.log("WETTER.drawWeatherChart wird ausgeführt", labels, data);
 
@@ -17,22 +12,18 @@ window.WETTER = {
             return false;
         }
 
-        // Warten auf vollständiges DOM-Rendering
         setTimeout(() => {
             try {
                 const ctx = canvas.getContext('2d');
 
-                // Bestehenden Chart entfernen, wenn vorhanden
                 if (window.WETTER.chart) {
                     window.WETTER.chart.destroy();
                 }
 
-                // Farbgradient für die Füllung definieren
                 const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
-                gradient.addColorStop(0, 'rgba(66, 165, 245, 0.7)');   // Hellblau
-                gradient.addColorStop(1, 'rgba(66, 165, 245, 0.1)');   // Durchsichtig
+                gradient.addColorStop(0, 'rgba(66, 165, 245, 0.7)');
+                gradient.addColorStop(1, 'rgba(66, 165, 245, 0.1)');
 
-                // Chart erstellen
                 window.WETTER.chart = new Chart(ctx, {
                     type: 'line',
                     data: {
@@ -58,87 +49,19 @@ window.WETTER = {
                     options: {
                         responsive: true,
                         maintainAspectRatio: false,
-                        plugins: {
-                            legend: {
-                                display: true,
-                                labels: {
-                                    font: {
-                                        family: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
-                                        size: 14
-                                    }
-                                }
-                            },
-                            tooltip: {
-                                enabled: true,
-                                backgroundColor: 'rgba(37, 64, 97, 0.9)',
-                                titleFont: {
-                                    family: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
-                                    size: 14
-                                },
-                                bodyFont: {
-                                    family: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
-                                    size: 13
-                                },
-                                padding: 12,
-                                displayColors: false,
-                                callbacks: {
-                                    title: function (tooltipItems) {
-                                        return tooltipItems[0].label + ' Uhr';
-                                    },
-                                    label: function (context) {
-                                        return context.raw + '°C';
-                                    }
-                                }
-                            }
-                        },
                         scales: {
                             x: {
                                 title: {
                                     display: true,
-                                    text: 'Uhrzeit',
-                                    font: {
-                                        family: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
-                                        size: 14,
-                                        weight: 'bold'
-                                    }
-                                },
-                                grid: {
-                                    color: 'rgba(200, 200, 200, 0.3)'
-                                },
-                                ticks: {
-                                    font: {
-                                        family: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
-                                        size: 12
-                                    }
+                                    text: 'Uhrzeit'
                                 }
                             },
                             y: {
                                 title: {
                                     display: true,
-                                    text: 'Temperatur (°C)',
-                                    font: {
-                                        family: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
-                                        size: 14,
-                                        weight: 'bold'
-                                    }
-                                },
-                                grid: {
-                                    color: 'rgba(200, 200, 200, 0.3)'
-                                },
-                                ticks: {
-                                    font: {
-                                        family: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
-                                        size: 12
-                                    },
-                                    callback: function (value) {
-                                        return value + '°C';
-                                    }
+                                    text: 'Temperatur (°C)'
                                 }
                             }
-                        },
-                        animation: {
-                            duration: 1500,
-                            easing: 'easeOutQuart'
                         }
                     }
                 });
