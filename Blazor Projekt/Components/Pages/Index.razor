@@ -36,22 +36,45 @@
 
 @code {
     private List<NavItem> navItems = new()
-    {
-        new NavItem("OCR", "/OCR", "Texterkennung und PDF-Verarbeitung mit OCR."),
-        new NavItem("Wetter", "/Wetter", "Wetterdaten abrufen und anzeigen."),
-        new NavItem("Fussball", "/Fusball", "Fussballinfos und Statistiken."),
-        new NavItem("Swiss Teams", "/swissteams", "Infos zu Schweizer Teams."),
-        new NavItem("Sprachen", "/sprachen", "Texterkennung in mehreren Sprachen."),
-        new NavItem("Cards", "/cards", "Kartenverwaltung mit Upload-Scanner."),
-        new NavItem("Code Cleaner", "/codecleaner", "Code eingeben und automatisch formatieren."),
-        new NavItem("Song to MP3", "/song", "YouTube Songs in MP3 umwandeln."),
-        new NavItem("Lebenslauf", "/lebenslauf", "Mein Lebenslauf und Werdegang."),
-        new NavItem("3D Ball", "/ball", "Demo für 3D-Animation mit Blazor."),
-        new NavItem("Grundlagen", "/grundlagen", "Wichtige Informatik-Grundlagen."),
-        new NavItem("Passwort Generator", "/passwort", "Sichere Passwörter generieren."),
-        new NavItem("2FA Login", "/qrcode", "Zwei-Faktor-Login mit QR Code."),
-        new NavItem("Datenverschlüsselung", "/encrypt", "Einfaches Tool zur Verschlüsselung.")
-    };
+{
+    // Texterkennung
+    new NavItem("OCR", "/OCR", "Texterkennung und PDF-Verarbeitung mit OCR."),
+    new NavItem("PDF Extractor", "/PdfTextExtractor", "Text aus PDFs extrahieren."),
+    new NavItem("Bild Extractor", "/ImageTextExtractor", "Text aus Bildern extrahieren."),
+
+    // AI Tools
+    new NavItem("Sprachen erkennen", "/sprachen", "Texterkennung in mehreren Sprachen."),
+    new NavItem("Code Cleaner", "/codecleaner", "Code eingeben und automatisch formatieren."),
+    new NavItem("Song to MP3", "/song", "YouTube Songs in MP3 umwandeln."),
+
+    // Projekte
+    new NavItem("Wetter", "/wetter", "Wetterdaten abrufen und anzeigen."),
+    new NavItem("Lebenslauf", "/lebenslauf", "Mein Lebenslauf und Werdegang."),
+    new NavItem("Card View", "/cards", "Kartenverwaltung mit Upload-Scanner."),
+    new NavItem("3D Ball", "/ball", "Demo für 3D-Animation mit Blazor."),
+
+    // Sport
+    new NavItem("Fussball", "/fusball", "Fussballinfos und Statistiken."),
+    new NavItem("Swiss Teams", "/swissteams", "Infos zu Schweizer Teams."),
+
+    // Lernen
+    new NavItem("Grundlagen", "/grundlagen", "Wichtige Informatik-Grundlagen."),
+
+    // Sicherheit
+    new NavItem("Passwort Generator", "/passwort", "Sichere Passwörter generieren."),
+    new NavItem("Zwei-Faktor-Login", "/qrcode", "Zwei-Faktor-Login mit QR Code."),
+    new NavItem("Datenverschlüsselung", "/encrypt", "Einfaches Tool zur Verschlüsselung."),
+
+    // Spiele
+    new NavItem("Black Jack", "/BJ", "Kartenspiel Black Jack online spielen."),
+    new NavItem("Hangman", "/Hangman", "Wortspiel zur Buchstabenraten."),
+
+    // Nasa
+    new NavItem("NASA", "/Nasa", "NASA API Daten und Visualisierungen."),
+    new NavItem("NeoWs", "/NeoWs", "Near Earth Objects analysieren."),
+    new NavItem("Mars Rover", "/Marsrover", "Mars Rover Bilder anzeigen.")
+};
+
 
     private record NavItem(string Title, string Url, string Description);
 

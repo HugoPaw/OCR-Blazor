@@ -15,7 +15,7 @@
 {
     <div class="mt-3 alert alert-info">
         <strong>Erkannte Sprache:</strong> @detectedLanguage<br />
-        <strong>Confidence:</strong> @confidenceScore
+        <strong>Confidence:</strong> @($"{confidenceScore * 100:0.00}%")
     </div>
 }
 
