@@ -115,4 +115,15 @@
             </div>
         }
     </div>
+    <div class="nav-group">
+        <button class="nav-header" @onclick='() => Toggle("Ideen")'>Ideen</button>
+        @if (toggles["Ideen"])
+        {
+            <div class="nav-sub">
+
+                <NavLink class="nav-link" href="/Ideen"></NavLink>
+                
+            </div>
+        }
+    </div>
 </nav>
