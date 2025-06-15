@@ -18,12 +18,12 @@ else
             {
                 <li>
                     <strong>@asteroid.name</strong> – Durchmesser: @GetDurchmesser(asteroid) m –
-                    
                     <span style="color: @(asteroid.is_potentially_hazardous_asteroid ? "red" : "green")">
-                        @(asteroid.is_potentially_hazardous_asteroid ? "Gefährlich" : "Keine sorge")
+                        @(asteroid.is_potentially_hazardous_asteroid ? "Gefährlich" : "Keine Sorge")
                     </span>
+                    <br />
+                    Entfernung: @GetEntfernungKm(asteroid) km
                 </li>
-               
             }
         </ul>
     }
@@ -55,6 +55,16 @@ else
         return Math.Round((est.estimated_diameter_min + est.estimated_diameter_max) / 2, 1);
     }
 
+    private string GetEntfernungKm(NeoAsteroid asteroid)
+    {
+        var firstApproach = asteroid.close_approach_data.FirstOrDefault();
+        if (firstApproach != null && double.TryParse(firstApproach.miss_distance.kilometers, out var dist))
+        {
+            return Math.Round(dist).ToString("N0");
+        }
+        return "Unbekannt";
+    }
+
     public class NeoResponse
     {
         public Dictionary<string, List<NeoAsteroid>> near_earth_objects { get; set; } = new();
@@ -65,6 +75,7 @@ else
         public string name { get; set; } = "";
         public bool is_potentially_hazardous_asteroid { get; set; }
         public DiameterData estimated_diameter { get; set; } = new();
+        public List<CloseApproachData> close_approach_data { get; set; } = new();
     }
 
     public class DiameterData
@@ -76,5 +87,16 @@ else
     {
         public double estimated_diameter_min { get; set; }
         public double estimated_diameter_max { get; set; }
+    }
+
+    public class CloseApproachData
+    {
+        public string close_approach_date { get; set; } = "";
+        public MissDistance miss_distance { get; set; } = new();
+    }
+
+    public class MissDistance
+    {
+        public string kilometers { get; set; } = "";
     }
 }
