@@ -3,6 +3,9 @@
 
 <h3>NASA: Astronomy Picture of the Day</h3>
 
+<input type="date" @bind="selectedDate" />
+<button @onclick="LoadApodByDate">Bild laden</button>
+
 @if (apodData == null)
 {
     <p>Lade Bild des Tages...</p>
@@ -18,12 +21,20 @@ else
 
 @code {
     private ApodData? apodData;
+    private DateTime selectedDate = DateTime.UtcNow;
 
     protected override async Task OnInitializedAsync()
     {
+        await LoadApodByDate(); // Start mit aktuellem Datum
+    }
+
+    private async Task LoadApodByDate()
+    {
         try
         {
-            apodData = await Http.GetFromJsonAsync<ApodData>("api/nasa/apod");
+            string formattedDate = selectedDate.ToString("yyyy-MM-dd");
+            var response = await Http.GetFromJsonAsync<ApodData>($"api/nasa/apod?date={formattedDate}");
+            apodData = response;
         }
         catch (Exception ex)
         {

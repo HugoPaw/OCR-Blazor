@@ -14,10 +14,15 @@ public class NasaController : ControllerBase
     }
 
     [HttpGet("apod")]
-    public async Task<IActionResult> GetApod()
+    public async Task<IActionResult> GetApod([FromQuery] string? date = null)
     {
         var apiKey = _config["NASA_API_KEY"];
         var url = $"https://api.nasa.gov/planetary/apod?api_key={apiKey}";
+
+        if (!string.IsNullOrWhiteSpace(date))
+        {
+            url += $"&date={date}";
+        }
 
         try
         {
