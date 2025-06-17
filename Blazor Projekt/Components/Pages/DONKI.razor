@@ -1,0 +1,133 @@
+﻿@page "/Donki"
+@using System.Text.Json
+@inject HttpClient Http
+@inject IConfiguration Config
+
+<h3>DONKI – Ereignisprüfung</h3>
+
+<div style="margin-bottom: 1rem;">
+    <label>Event-Typ: </label>
+    <select @bind="selectedType">
+        <option value="FLR">Sonnensturm (FLR)</option>
+        <option value="CME">Koronaler Massenauswurf (CME)</option>
+        <option value="SEP">Solare Teilchen (SEP)</option>
+        <option value="GST">Geomagnetischer Sturm (GST)</option>
+        <option value="notifications">Benachrichtigungen</option>
+    </select>
+
+    <label style="margin-left: 1rem;">Startdatum: </label>
+    <input type="date" @bind="startDate" />
+    <label style="margin-left: 1rem;">Enddatum: </label>
+    <input type="date" @bind="endDate" />
+    <button @onclick="PruefeEreignisse" style="margin-left: 1rem;">Prüfen</button>
+</div>
+
+@if (isLoading)
+{
+    <p>Lade Daten...</p>
+}
+else if (errorMsg != null)
+{
+    <p style="color:red">@errorMsg</p>
+}
+else if (events != null)
+{
+    if (events.Count == 0)
+    {
+        <p>❌ Keine Ereignisse vom Typ <strong>@selectedType</strong> im gewählten Zeitraum.</p>
+    }
+    else
+    {
+        <p>✅ Es gab <strong>@events.Count</strong> Ereignis(se) vom Typ <strong>@selectedType</strong>:</p>
+        <ul>
+            @foreach (var item in events)
+            {
+                <li>@item</li>
+            }
+        </ul>
+    }
+}
+
+@code {
+    private string selectedType = "FLR";
+    private DateTime startDate = DateTime.UtcNow.AddMonths(-1);
+    private DateTime endDate = DateTime.UtcNow;
+    private List<string>? events;
+    private bool isLoading = false;
+    private string? errorMsg;
+
+    private async Task PruefeEreignisse()
+    {
+        isLoading = true;
+        events = null;
+        errorMsg = null;
+
+        var apiKey = Config["NASA_API_KEY"];
+        var url = $"https://api.nasa.gov/DONKI/{selectedType}?startDate={startDate:yyyy-MM-dd}&endDate={endDate:yyyy-MM-dd}&api_key={apiKey}";
+
+        try
+        {
+            var json = await Http.GetStringAsync(url);
+            events = ExtractEventInfo(json, selectedType);
+        }
+        catch (Exception ex)
+        {
+            errorMsg = $"Fehler: {ex.Message}";
+        }
+
+        isLoading = false;
+    }
+
+    private List<string> ExtractEventInfo(string json, string type)
+    {
+        var result = new List<string>();
+
+        using var doc = JsonDocument.Parse(json);
+        foreach (var element in doc.RootElement.EnumerateArray())
+        {
+            if (type == "FLR")
+            {
+                if (element.TryGetProperty("beginTime", out var time) &&
+                    element.TryGetProperty("classType", out var classType))
+                {
+                    result.Add($"{time.GetDateTime():yyyy-MM-dd} – Klasse: {classType.GetString()}");
+                }
+            }
+            else if (type == "CME")
+            {
+                if (element.TryGetProperty("startTime", out var time) &&
+                    element.TryGetProperty("cmeAnalyses", out var analyses) &&
+                    analyses.GetArrayLength() > 0 &&
+                    analyses[0].TryGetProperty("speed", out var speed))
+                {
+                    result.Add($"{time.GetDateTime():yyyy-MM-dd} – Geschwindigkeit: {speed.GetInt32()} km/s");
+                }
+            }
+            else if (type == "SEP")
+            {
+                if (element.TryGetProperty("eventTime", out var time))
+                {
+                    result.Add($"{time.GetDateTime():yyyy-MM-dd} – SEP-Ereignis");
+                }
+            }
+            else if (type == "GST")
+            {
+                if (element.TryGetProperty("startTime", out var time) &&
+                    element.TryGetProperty("kpIndex", out var kp))
+                {
+                    result.Add($"{time.GetDateTime():yyyy-MM-dd} – Kp-Index: {kp[0].GetProperty("kpIndex").GetDouble()}");
+                }
+            }
+            else if (type == "notifications")
+            {
+                if (element.TryGetProperty("messageIssueTime", out var time) &&
+                    element.TryGetProperty("messageType", out var msgType))
+                {
+                    result.Add($"{time.GetDateTime():yyyy-MM-dd} – Typ: {msgType.GetString()}");
+                }
+            }
+        }
+
+        return result;
+    }
+}
