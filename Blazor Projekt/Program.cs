@@ -27,8 +27,11 @@ builder.Services.AddScoped(sp => new HttpClient
     BaseAddress = new Uri("https://localhost:7115")
 });
 
-// HttpClientFactory für Controller (Backend)
-builder.Services.AddHttpClient(); 
+// Benannter HttpClient für NASA-Zugriffe im Backend (Proxy)
+builder.Services.AddHttpClient("NASA", client =>
+{
+    client.DefaultRequestHeaders.UserAgent.ParseAdd("Mozilla/5.0 (compatible; MyApp/1.0)");
+});
 
 // Controller aktivieren
 builder.Services.AddControllers();

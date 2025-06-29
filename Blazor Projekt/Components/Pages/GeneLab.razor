@@ -1,6 +1,5 @@
 ﻿@page "/GeneLab"
 @using System.Text.Json
-@using System.Net
 @inject HttpClient Http
 
 <h2>🧬 Space Bio Dashboard</h2>
@@ -46,40 +45,22 @@ else
 
         foreach (var id in ids)
         {
-            string baseUrl = $"https://genelab-data.ndc.nasa.gov/genelab/data/GLDS/GLDS-{id}/metadata.json";
+            string proxyUrl = $"https://localhost:7115/api/GeneLabProxy/{id}";
 
             try
             {
-                // HEAD-Request um Verfügbarkeit zu prüfen
-                var headRequest = new HttpRequestMessage(HttpMethod.Head, baseUrl);
-                var headResponse = await Http.SendAsync(headRequest);
+                var json = await Http.GetStringAsync(proxyUrl);
+                var doc = JsonDocument.Parse(json);
+                var root = doc.RootElement;
 
-                if (headResponse.StatusCode == HttpStatusCode.OK)
+                studies.Add(new GeneLabStudy
                 {
-                    var json = await Http.GetStringAsync(baseUrl);
-                    var doc = JsonDocument.Parse(json);
-                    var root = doc.RootElement;
-
-                    studies.Add(new GeneLabStudy
-                    {
-                        Id = $"GLDS-{id}",
-                        Title = root.GetProperty("dataset_title").GetString() ?? "-",
-                        Organism = root.GetProperty("organism").GetString() ?? "-",
-                        Platform = root.GetProperty("platform").GetString() ?? "-",
-                        StudyLink = $"https://genelab-data.ndc.nasa.gov/genelab/accession/GLDS-{id}"
-                    });
-                }
-                else
-                {
-                    studies.Add(new GeneLabStudy
-                    {
-                        Id = $"GLDS-{id}",
-                        Title = $"Nicht verfügbar (HTTP {(int)headResponse.StatusCode})",
-                        Organism = "-",
-                        Platform = "-",
-                        StudyLink = "#"
-                    });
-                }
+                    Id = $"GLDS-{id}",
+                    Title = root.GetProperty("dataset_title").GetString() ?? "-",
+                    Organism = root.GetProperty("organism").GetString() ?? "-",
+                    Platform = root.GetProperty("platform").GetString() ?? "-",
+                    StudyLink = $"https://genelab-data.ndc.nasa.gov/genelab/accession/GLDS-{id}"
+                });
             }
             catch (Exception ex)
             {
