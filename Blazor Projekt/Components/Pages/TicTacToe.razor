@@ -1,0 +1,256 @@
+﻿@page "/tictactoe"
+@using System.ComponentModel
+
+<PageTitle>Tic Tac Toe</PageTitle>
+
+<div class="container">
+    <h1>Tic Tac Toe vs KI</h1>
+
+    <div class="game-status">
+        @if (!string.IsNullOrEmpty(gameMessage))
+        {
+            <h2>@gameMessage</h2>
+        }
+    </div>
+
+    <div class="game-board">
+        @for (int i = 0; i < 9; i++)
+        {
+            int index = i; // Wichtig: lokale Variable für Lambda
+                           <button class="cell @(GetCellClass(index))"
+                                   @onclick="() => HandleCellClick(index)"
+                                   disabled="@IsGameOver()">
+                               @board[index]
+                           </button>
+        }
+    </div>
+
+    @if (IsGameOver())
+    {
+        <button class="reset-btn" @onclick="ResetGame">
+            Neues Spiel
+        </button>
+    }
+</div>
+
+<style>
+    .container {
+        max-width: 400px;
+        margin: 0 auto;
+        padding: 20px;
+        text-align: center;
+        font-family: Arial, sans-serif;
+    }
+
+    .game-status {
+        margin: 20px 0;
+        min-height: 60px;
+    }
+
+    .game-board {
+        display: grid;
+        grid-template-columns: repeat(3, 100px);
+        grid-template-rows: repeat(3, 100px);
+        gap: 5px;
+        justify-content: center;
+        margin: 20px 0;
+    }
+
+    .cell {
+        background-color: #f0f0f0;
+        border: 2px solid #333;
+        font-size: 36px;
+        font-weight: bold;
+        cursor: pointer;
+        transition: background-color 0.2s;
+    }
+
+        .cell:hover:not(:disabled) {
+            background-color: #e0e0e0;
+        }
+
+        .cell:disabled {
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+
+        .cell.player-x {
+            color: #e74c3c;
+        }
+
+        .cell.player-o {
+            color: #3498db;
+        }
+
+    .reset-btn {
+        background-color: #27ae60;
+        color: white;
+        border: none;
+        padding: 12px 24px;
+        font-size: 16px;
+        border-radius: 5px;
+        cursor: pointer;
+        margin-top: 20px;
+    }
+
+        .reset-btn:hover {
+            background-color: #219a52;
+        }
+</style>
+
+@code {
+    private string[] board = new string[9];
+    private bool isPlayerTurn = true;
+    private bool gameOver = false;
+    private string gameMessage = "Du bist dran! (X)";
+    private Random random = new Random();
+
+    protected override void OnInitialized()
+    {
+        InitializeGame();
+    }
+
+    private void InitializeGame()
+    {
+        board = new string[9];
+        for (int i = 0; i < 9; i++)
+        {
+            board[i] = "";
+        }
+        isPlayerTurn = true;
+        gameOver = false;
+        gameMessage = "Du bist dran! (X)";
+    }
+
+    private async Task HandleCellClick(int index)
+    {
+        // Prüfen ob Zug gültig ist
+        if (!isPlayerTurn || gameOver || !string.IsNullOrEmpty(board[index]))
+            return;
+
+        // Spielerzug
+        board[index] = "X";
+
+        // Prüfen ob Spieler gewonnen hat
+        if (CheckWinner("X"))
+        {
+            gameMessage = "Du hast gewonnen! 🎉";
+            gameOver = true;
+            return;
+        }
+
+        // Prüfen ob Unentschieden
+        if (IsBoardFull())
+        {
+            gameMessage = "Unentschieden! 🤝";
+            gameOver = true;
+            return;
+        }
+
+        // KI ist dran
+        isPlayerTurn = false;
+        gameMessage = "KI denkt nach...";
+        StateHasChanged();
+
+        // Kurze Pause für bessere UX
+        await Task.Delay(800);
+
+        // KI-Zug
+        MakeAIMove();
+
+        // Prüfen ob KI gewonnen hat
+        if (CheckWinner("O"))
+        {
+            gameMessage = "KI hat gewonnen! 🤖";
+            gameOver = true;
+            return;
+        }
+
+        // Prüfen ob Unentschieden nach KI-Zug
+        if (IsBoardFull())
+        {
+            gameMessage = "Unentschieden! 🤝";
+            gameOver = true;
+            return;
+        }
+
+        // Spieler ist wieder dran
+        isPlayerTurn = true;
+        gameMessage = "Du bist dran! (X)";
+    }
+
+    private void MakeAIMove()
+    {
+        // Erstelle Liste aller freien Felder
+        var availableCells = new List<int>();
+        for (int i = 0; i < 9; i++)
+        {
+            if (string.IsNullOrEmpty(board[i]))
+            {
+                availableCells.Add(i);
+            }
+        }
+
+        if (availableCells.Count > 0)
+        {
+            // Zufälligen freien Platz wählen
+            int randomIndex = random.Next(availableCells.Count);
+            int cellIndex = availableCells[randomIndex];
+            board[cellIndex] = "O";
+        }
+    }
+
+    private bool CheckWinner(string player)
+    {
+        // Alle Gewinnkombinationen definieren
+        int[,] winPatterns = {
+            {0,1,2}, {3,4,5}, {6,7,8}, // Reihen
+            {0,3,6}, {1,4,7}, {2,5,8}, // Spalten
+            {0,4,8}, {2,4,6}           // Diagonalen
+        };
+
+        // Prüfe jede Gewinnkombination
+        for (int i = 0; i < winPatterns.GetLength(0); i++)
+        {
+            if (board[winPatterns[i, 0]] == player &&
+                board[winPatterns[i, 1]] == player &&
+                board[winPatterns[i, 2]] == player)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private bool IsBoardFull()
+    {
+        for (int i = 0; i < 9; i++)
+        {
+            if (string.IsNullOrEmpty(board[i]))
+                return false;
+        }
+        return true;
+    }
+
+    private bool IsGameOver()
+    {
+        return gameOver;
+    }
+
+    private string GetCellClass(int index)
+    {
+        if (board[index] == "X")
+            return "player-x";
+        else if (board[index] == "O")
+            return "player-o";
+        else
+            return "";
+    }
+
+    private void ResetGame()
+    {
+        InitializeGame();
+        StateHasChanged();
+    }
+}
