@@ -1,0 +1,86 @@
+﻿@page "/reaction"
+@using System.Timers
+
+<div @onclick="HandleClick"
+     style="width:100vw; height:100vh; background-color:@BackgroundColor; display:flex; align-items:center; justify-content:center; cursor:pointer; transition:background-color 0.3s ease; user-select:none;">
+    @if (!gameStarted)
+    {
+        <div style="color:white; font-size:2rem; text-align:center;">Klick irgendwo, um zu starten</div>
+    }
+    else if (clicked)
+    {
+        <div style="color:white; font-size:2rem; text-align:center;">
+            Deine Reaktionszeit: <strong>@reactionTime ms</strong><br /><br />
+            <button @onclick="Reset" style="padding:10px 20px; font-size:1rem;">Nochmal</button>
+        </div>
+    }
+</div>
+
+@code {
+    private bool gameStarted = false;
+    private bool waiting = false;
+    private bool canClick = false;
+    private bool clicked = false;
+
+    private int reactionTime;
+    private DateTime startTime;
+    private Timer timer;
+
+    private string BackgroundColor => clicked ? "#111" :
+                                      !gameStarted ? "#333" :
+                                      waiting ? "green" :
+                                      canClick ? "red" : "#222";
+
+    private async Task HandleClick()
+    {
+        if (!gameStarted)
+        {
+            StartGame();
+        }
+        else if (canClick)
+        {
+            reactionTime = (int)(DateTime.Now - startTime).TotalMilliseconds;
+            canClick = false;
+            clicked = true;
+        }
+        else if (waiting)
+        {
+            // Zu früh geklickt – optional: Kommentar oder Reset
+        }
+    }
+
+    private void StartGame()
+    {
+        gameStarted = true;
+        waiting = true;
+        clicked = false;
+        canClick = false;
+
+        var rand = new Random();
+        int waitTime = rand.Next(1000, 7000); // 1–7 Sekunden
+
+        timer = new Timer(waitTime);
+        timer.Elapsed += EnableClick;
+        timer.AutoReset = false;
+        timer.Start();
+    }
+
+    private void EnableClick(object sender, ElapsedEventArgs e)
+    {
+        waiting = false;
+        canClick = true;
+        startTime = DateTime.Now;
+        InvokeAsync(StateHasChanged);
+    }
+
+    private async Task Reset()
+    {
+        gameStarted = false;
+        waiting = false;
+        canClick = false;
+        clicked = false;
+        reactionTime = 0;
+        timer?.Dispose();
+        await InvokeAsync(StateHasChanged);
+    }
+}
