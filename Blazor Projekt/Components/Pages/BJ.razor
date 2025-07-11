@@ -1,10 +1,11 @@
 ﻿@page "/BJ"
 
-<h3>Blackjack</h3>
+<h3>Blackjack mit Kartenzähler</h3>
 
 <div>
     <p><strong>Deine Karten:</strong> @string.Join(", ", PlayerHand) (@PlayerTotal)</p>
     <p><strong>Dealer zeigt:</strong> @string.Join(", ", GameOver ? DealerHand : DealerHand.Take(1)) @(GameOver ? $"({DealerTotal})" : "")</p>
+    <p><strong>Running Count:</strong> @RunningCount</p>
 
     @if (!GameOver)
     {
@@ -25,23 +26,41 @@
 
     private bool GameOver = false;
     private string ResultMessage = "";
+    private int RunningCount = 0;
 
     private static readonly Dictionary<string, int> CardValues = new()
-        {
-            ["2"] = 2,
-            ["3"] = 3,
-            ["4"] = 4,
-            ["5"] = 5,
-            ["6"] = 6,
-            ["7"] = 7,
-            ["8"] = 8,
-            ["9"] = 9,
-            ["10"] = 10,
-            ["J"] = 10,
-            ["Q"] = 10,
-            ["K"] = 10,
-            ["A"] = 11
-        };
+    {
+        ["2"] = 2,
+        ["3"] = 3,
+        ["4"] = 4,
+        ["5"] = 5,
+        ["6"] = 6,
+        ["7"] = 7,
+        ["8"] = 8,
+        ["9"] = 9,
+        ["10"] = 10,
+        ["J"] = 10,
+        ["Q"] = 10,
+        ["K"] = 10,
+        ["A"] = 11
+    };
+
+    private static readonly Dictionary<string, int> HiLoValues = new()
+    {
+        ["2"] = +1,
+        ["3"] = +1,
+        ["4"] = +1,
+        ["5"] = +1,
+        ["6"] = +1,
+        ["7"] = 0,
+        ["8"] = 0,
+        ["9"] = 0,
+        ["10"] = -1,
+        ["J"] = -1,
+        ["Q"] = -1,
+        ["K"] = -1,
+        ["A"] = -1
+    };
 
     protected override void OnInitialized()
     {
@@ -57,19 +76,31 @@
         DealerHand = new() { DrawCard(), DrawCard() };
         GameOver = false;
         ResultMessage = "";
+        RunningCount = 0; // Reset bei neuem Spiel
 
-		if (PlayerTotal == 21)
-		{
-			GameOver = true;
-			ResultMessage = "Blackjack! Du hast gewonnen!";
-		}
+        // Initiale Karten zählen
+        foreach (var card in PlayerHand.Concat(DealerHand))
+            UpdateRunningCount(card);
+
+        if (PlayerTotal == 21)
+        {
+            GameOver = true;
+            ResultMessage = "Blackjack! Du hast gewonnen!";
+        }
     }
 
     private string DrawCard()
     {
         var card = Deck.First();
         Deck.RemoveAt(0);
+        UpdateRunningCount(card);
         return card;
+    }
+
+    private void UpdateRunningCount(string card)
+    {
+        if (HiLoValues.TryGetValue(card, out int value))
+            RunningCount += value;
     }
 
     private int CalculateTotal(List<string> hand)
@@ -79,7 +110,7 @@
 
         while (total > 21 && aces-- > 0)
         {
-            total -= 10; // A = 1 statt 11
+            total -= 10;
         }
 
         return total;
@@ -108,8 +139,8 @@
 
         GameOver = true;
 
-        int player = CalculateTotal(PlayerHand);
-        int dealer = CalculateTotal(DealerHand);
+        int player = PlayerTotal;
+        int dealer = DealerTotal;
 
         if (dealer > 21 || player > dealer)
         {
