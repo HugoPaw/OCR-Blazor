@@ -3,9 +3,28 @@
 <h3>Blackjack mit Kartenzähler</h3>
 
 <div>
+    <label>
+        Deckanzahl:
+        <select @bind="DeckCount">
+            <option value="2">2 Decks</option>
+            <option value="4">4 Decks</option>
+            <option value="6">6 Decks</option>
+        </select>
+    </label>
+
+    <label style="margin-left: 20px;">
+        <input type="checkbox" @bind="IsDealerView" />
+        Dealer-Ansicht
+    </label>
+
     <p><strong>Deine Karten:</strong> @string.Join(", ", PlayerHand) (@PlayerTotal)</p>
     <p><strong>Dealer zeigt:</strong> @string.Join(", ", GameOver ? DealerHand : DealerHand.Take(1)) @(GameOver ? $"({DealerTotal})" : "")</p>
     <p><strong>Running Count:</strong> @RunningCount</p>
+
+    @if (IsDealerView)
+    {
+        <p><strong>Nächste Karten im Deck (Dealer View):</strong> @string.Join(", ", Deck.Take(10))</p>
+    }
 
     @if (!GameOver)
     {
@@ -27,6 +46,9 @@
     private bool GameOver = false;
     private string ResultMessage = "";
     private int RunningCount = 0;
+
+    private int DeckCount = 4;
+    private bool IsDealerView = false;
 
     private static readonly Dictionary<string, int> CardValues = new()
     {
@@ -70,15 +92,17 @@
     private void Restart()
     {
         var cards = new[] { "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K", "A" };
-        Deck = Enumerable.Repeat(cards, 4).SelectMany(c => c).OrderBy(_ => Guid.NewGuid()).ToList();
+        Deck = Enumerable.Repeat(cards, 4 * DeckCount)
+                         .SelectMany(c => c)
+                         .OrderBy(_ => Guid.NewGuid())
+                         .ToList();
 
         PlayerHand = new() { DrawCard(), DrawCard() };
         DealerHand = new() { DrawCard(), DrawCard() };
         GameOver = false;
         ResultMessage = "";
-        RunningCount = 0; // Reset bei neuem Spiel
+        RunningCount = 0;
 
-        // Initiale Karten zählen
         foreach (var card in PlayerHand.Concat(DealerHand))
             UpdateRunningCount(card);
 
@@ -109,9 +133,7 @@
         int aces = hand.Count(c => c == "A");
 
         while (total > 21 && aces-- > 0)
-        {
             total -= 10;
-        }
 
         return total;
     }
@@ -132,7 +154,7 @@
 
     private void Stand()
     {
-        while (CalculateTotal(DealerHand) < 17)
+        while (DealerTotal < 17)
         {
             DealerHand.Add(DrawCard());
         }
@@ -143,16 +165,10 @@
         int dealer = DealerTotal;
 
         if (dealer > 21 || player > dealer)
-        {
             ResultMessage = "Du hast gewonnen!";
-        }
         else if (dealer == player)
-        {
             ResultMessage = "Unentschieden.";
-        }
         else
-        {
             ResultMessage = "Dealer gewinnt.";
-        }
     }
 }
