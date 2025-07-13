@@ -17,13 +17,33 @@
         Dealer-Ansicht
     </label>
 
-    <p><strong>Deine Karten:</strong> @string.Join(", ", PlayerHand) (@PlayerTotal)</p>
-    <p><strong>Dealer zeigt:</strong> @string.Join(", ", GameOver ? DealerHand : DealerHand.Take(1)) @(GameOver ? $"({DealerTotal})" : "")</p>
+    <p><strong>Deine Karten (@PlayerTotal):</strong></p>
+    <div class="card-row">
+        @foreach (var card in PlayerHand)
+        {
+            <div class="card">@card</div>
+        }
+    </div>
+
+    <p><strong>Dealer zeigt (@(GameOver? DealerTotal.ToString() : "?")):</strong></p>
+    <div class="card-row">
+        @foreach (var card in (GameOver ? DealerHand : DealerHand.Take(1)))
+        {
+            <div class="card">@card</div>
+        }
+    </div>
+
     <p><strong>Running Count:</strong> @RunningCount</p>
 
     @if (IsDealerView)
     {
-        <p><strong>Nächste Karten im Deck (Dealer View):</strong> @string.Join(", ", Deck.Take(10))</p>
+        <p><strong>Nächste Karten im Deck (Dealer View):</strong></p>
+        <div class="card-row">
+            @foreach (var card in Deck.Take(10))
+            {
+                <div class="card">@card</div>
+            }
+        </div>
     }
 
     @if (!GameOver)
@@ -37,6 +57,30 @@
         <button @onclick="Restart">Neustart</button>
     }
 </div>
+
+<style>
+    .card-row {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 12px;
+        flex-wrap: wrap;
+    }
+
+    .card {
+        width: 40px;
+        height: 60px;
+        border: 1px solid #333;
+        border-radius: 6px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-weight: bold;
+        background-color: white;
+        color: black;
+        box-shadow: 1px 1px 4px rgba(0,0,0,0.2);
+        font-size: 18px;
+    }
+</style>
 
 @code {
     private List<string> Deck = new();
