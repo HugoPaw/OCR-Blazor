@@ -1,0 +1,70 @@
+﻿@page "/Poker"
+
+<h3>Poker (Texas Hold'em - Demo)</h3>
+
+<button @onclick="Deal">Karten austeilen</button>
+
+@if (TableCards.Any())
+{
+    <h4>Community Cards:</h4>
+    <p>@string.Join(", ", TableCards)</p>
+}
+
+@for (int i = 0; i < PlayerHands.Count; i++)
+{
+    <h4>Spieler @i:</h4>
+    <p>@string.Join(", ", PlayerHands[i])</p>
+}
+
+@code {
+    private List<string> Deck = new();
+    private List<List<string>> PlayerHands = new();
+    private List<string> TableCards = new();
+    private int PlayerCount = 2;
+
+    private static readonly string[] Suits = { "♠", "♥", "♦", "♣" };
+    private static readonly string[] Ranks = { "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K", "A" };
+
+    private void Deal()
+    {
+        InitDeck();
+        ShuffleDeck();
+
+        PlayerHands.Clear();
+        TableCards.Clear();
+
+        for (int i = 0; i < PlayerCount; i++)
+        {
+            var hand = new List<string> { DrawCard(), DrawCard() };
+            PlayerHands.Add(hand);
+        }
+
+        // Flop (3 Karten), Turn (1), River (1)
+        TableCards.Add(DrawCard());
+        TableCards.Add(DrawCard());
+        TableCards.Add(DrawCard());
+        TableCards.Add(DrawCard());
+        TableCards.Add(DrawCard());
+    }
+
+    private void InitDeck()
+    {
+        Deck = (from suit in Suits
+                from rank in Ranks
+                select $"{rank}{suit}").ToList();
+    }
+
+    private void ShuffleDeck()
+    {
+        var rnd = new Random();
+        Deck = Deck.OrderBy(_ => rnd.Next()).ToList();
+    }
+
+    private string DrawCard()
+    {
+        if (Deck.Count == 0) return "🂠";
+        var card = Deck[0];
+        Deck.RemoveAt(0);
+        return card;
+    }
+}
