@@ -1,53 +1,61 @@
 ﻿@page "/Poker"
 
-<h3>Poker (Texas Hold'em - Demo)</h3>
+<h2>Poker Demo – Texas Hold'em</h2>
 
 @if (!PlayerHands.Any())
 {
-    <button @onclick="Deal">Karten austeilen</button>
+    <button @onclick="Deal">Spiel starten</button>
 }
 else
 {
-    <h4>Deine Hand (Spieler 1):</h4>
-    <p>@string.Join(", ", PlayerHands[0])</p>
+    <section>
+        <h3>Deine Hand</h3>
+        <p>@string.Join(", ", PlayerHands[0])</p>
 
-    @if (!HasFolded && Phase < 4)
-    {
-        <button @onclick="Bet">Bet</button>
-        <button @onclick="Check">Check</button>
-        <button @onclick="Fold">Fold</button>
-    }
-
-    @if (HasFolded)
-    {
-        <p style="color:red;">Du hast gepasst (Fold).</p>
-    }
-    else if (ActionFeedback != "")
-    {
-        <p style="color:green;">@ActionFeedback</p>
-    }
-
-    <h4>Community Cards:</h4>
-    <p>
-        @if (Phase >= 1)
+        @if (!HasFolded && Phase < 4)
         {
-            <span>Flop: @string.Join(", ", TableCards.Take(3))<br /></span>
+            <div>
+                <button @onclick="Bet">Setzen</button>
+                <button @onclick="Check">Checken</button>
+                <button @onclick="Fold">Passen</button>
+            </div>
         }
-        @if (Phase >= 2)
-        {
-            <span>Turn: @TableCards[3]<br /></span>
-        }
-        @if (Phase >= 3)
-        {
-            <span>River: @TableCards[4]</span>
-        }
-    </p>
 
-    @for (int i = 1; i < PlayerHands.Count; i++)
-    {
-        <h4>Spieler @(i + 1):</h4>
-        <p>@string.Join(", ", PlayerHands[i])</p>
-    }
+        @if (HasFolded)
+        {
+            <p style="color:red;">Du hast gepasst.</p>
+        }
+        else if (!string.IsNullOrWhiteSpace(ActionFeedback))
+        {
+            <p style="color:green;">@ActionFeedback</p>
+        }
+    </section>
+
+    <section>
+        <h3>Community Cards</h3>
+        <p>
+            @if (Phase >= 1)
+            {
+                <span>Flop: @string.Join(", ", TableCards.Take(3))<br /></span>
+            }
+            @if (Phase >= 2)
+            {
+                <span>Turn: @TableCards[3]<br /></span>
+            }
+            @if (Phase >= 3)
+            {
+                <span>River: @TableCards[4]</span>
+            }
+        </p>
+    </section>
+
+    <section>
+        <h3>Gegnerische Hände</h3>
+        @for (int i = 1; i < PlayerHands.Count; i++)
+        {
+            <p><strong>Spieler @(i + 1):</strong> @string.Join(", ", PlayerHands[i])</p>
+        }
+    </section>
 
     @if (Phase >= 4)
     {
@@ -63,7 +71,7 @@ else
     private int PlayerCount = 2;
 
     private bool HasFolded = false;
-    private int Phase = 0; // 0: Pre-Flop, ..., 4: Showdown
+    private int Phase = 0;
     private string ActionFeedback = "";
 
     private static readonly string[] Suits = { "♠", "♥", "♦", "♣" };
@@ -81,14 +89,10 @@ else
         ActionFeedback = "";
 
         for (int i = 0; i < PlayerCount; i++)
-        {
             PlayerHands.Add(new List<string> { DrawCard(), DrawCard() });
-        }
 
         for (int i = 0; i < 5; i++)
-        {
             TableCards.Add(DrawCard());
-        }
     }
 
     private void Bet()
@@ -113,8 +117,8 @@ else
     {
         HasFolded = true;
         PlayerHands[0].Clear();
-        ActionFeedback = "Du hast das Spiel verlassen (Fold).";
         Phase = 4;
+        ActionFeedback = "Du hast das Spiel verlassen.";
     }
 
     private void ResetGame()
@@ -152,7 +156,7 @@ else
     private string DrawCard()
     {
         if (Deck.Count == 0)
-            throw new InvalidOperationException("Deck ist leer.");
+            throw new InvalidOperationException("Das Deck ist leer.");
         var card = Deck[0];
         Deck.RemoveAt(0);
         return card;
