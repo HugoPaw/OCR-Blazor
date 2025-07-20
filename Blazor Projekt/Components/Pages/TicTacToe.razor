@@ -1,42 +1,34 @@
 ﻿@page "/tictactoe"
-@using System.ComponentModel
-
 <PageTitle>Tic Tac Toe</PageTitle>
 
 <div class="container">
     <h1>Tic Tac Toe vs KI</h1>
 
     <div class="game-status">
-        @if (!string.IsNullOrEmpty(gameMessage))
-        {
-            <h2>@gameMessage</h2>
-        }
+        <h2>@gameMessage</h2>
     </div>
 
     <div class="game-board">
         @for (int i = 0; i < 9; i++)
         {
-            int index = i; // Wichtig: lokale Variable für Lambda
-                           <button class="cell @(GetCellClass(index))"
-                                   @onclick="() => HandleCellClick(index)"
-                                   disabled="@IsGameOver()">
-                               @board[index]
-                           </button>
+            <button class="cell @(GetCellClass(i))"
+                    @onclick="@(() => OnCellClicked(i))"
+                    disabled="@(!string.IsNullOrEmpty(board[i]) || gameOver)">
+                @board[i]
+            </button>
         }
     </div>
 
-    @if (IsGameOver())
+    @if (gameOver)
     {
-        <button class="reset-btn" @onclick="ResetGame">
-            Neues Spiel
-        </button>
+        <button class="reset-btn" @onclick="ResetGame">Neues Spiel</button>
     }
 </div>
 
 <style>
     .container {
         max-width: 400px;
-        margin: 0 auto;
+        margin: auto;
         padding: 20px;
         text-align: center;
         font-family: Arial, sans-serif;
@@ -50,19 +42,18 @@
     .game-board {
         display: grid;
         grid-template-columns: repeat(3, 100px);
-        grid-template-rows: repeat(3, 100px);
         gap: 5px;
         justify-content: center;
-        margin: 20px 0;
-    }/
+    }
 
     .cell {
+        width: 100px;
+        height: 100px;
         background-color: #f0f0f0;
         border: 2px solid #333;
         font-size: 36px;
         font-weight: bold;
         cursor: pointer;
-        transition: background-color 0.2s;
     }
 
         .cell:hover:not(:disabled) {
@@ -71,26 +62,25 @@
 
         .cell:disabled {
             cursor: not-allowed;
-            opacity: 0.7;
+            opacity: 0.6;
         }
 
-        .cell.player-x {
-            color: #e74c3c;
-        }
+    .player-x {
+        color: #e74c3c;
+    }
 
-        .cell.player-o {
-            color: #3498db;
-        }
+    .player-o {
+        color: #3498db;
+    }
 
     .reset-btn {
+        margin-top: 20px;
+        padding: 10px 20px;
         background-color: #27ae60;
         color: white;
         border: none;
-        padding: 12px 24px;
-        font-size: 16px;
         border-radius: 5px;
-        cursor: pointer;
-        margin-top: 20px;
+        font-size: 16px;
     }
 
         .reset-btn:hover {
@@ -102,155 +92,75 @@
     private string[] board = new string[9];
     private bool isPlayerTurn = true;
     private bool gameOver = false;
-    private string gameMessage = "Du bist dran! (X)";
-    private Random random = new Random();
+    private string gameMessage = "";
 
-    protected override void OnInitialized()
+    private static readonly int[,] winCombos = new int[,] {
+        {0,1,2}, {3,4,5}, {6,7,8}, // Reihen
+        {0,3,6}, {1,4,7}, {2,5,8}, // Spalten
+        {0,4,8}, {2,4,6}           // Diagonalen
+    };
+
+    protected override void OnInitialized() => ResetGame();
+
+    private async Task OnCellClicked(int index)
     {
-        InitializeGame();
-    }
+        if (!isPlayerTurn || gameOver || !string.IsNullOrEmpty(board[index])) return;
 
-    private void InitializeGame()
-    {
-        board = new string[9];
-        for (int i = 0; i < 9; i++)
-        {
-            board[i] = "";
-        }
-        isPlayerTurn = true;
-        gameOver = false;
-        gameMessage = "Du bist dran! (X)";
-    }
-
-    private async Task HandleCellClick(int index)
-    {
-        // Prüfen ob Zug gültig ist
-        if (!isPlayerTurn || gameOver || !string.IsNullOrEmpty(board[index]))
-            return;
-
-        // Spielerzug
         board[index] = "X";
-
-        // Prüfen ob Spieler gewonnen hat
-        if (CheckWinner("X"))
-        {
-            gameMessage = "Du hast gewonnen! 🎉";
-            gameOver = true;
-            return;
-        }
-
-        // Prüfen ob Unentschieden
-        if (IsBoardFull())
-        {
-            gameMessage = "Unentschieden! 🤝";
-            gameOver = true;
-            return;
-        }
-
-        // KI ist dran
         isPlayerTurn = false;
+
+        if (CheckWin("X")) { gameMessage = "Du hast gewonnen!"; gameOver = true; return; }
+        if (IsDraw()) { gameMessage = "Unentschieden!"; gameOver = true; return; }
+
         gameMessage = "KI denkt nach...";
         StateHasChanged();
+        await Task.Delay(500);
 
-        // Kurze Pause für bessere UX
-        await Task.Delay(800);
+        AIMove();
 
-        // KI-Zug
-        MakeAIMove();
+        if (CheckWin("O")) { gameMessage = "KI hat gewonnen!"; gameOver = true; return; }
+        if (IsDraw()) { gameMessage = "Unentschieden!"; gameOver = true; return; }
 
-        // Prüfen ob KI gewonnen hat
-        if (CheckWinner("O"))
-        {
-            gameMessage = "KI hat gewonnen! 🤖";
-            gameOver = true;
-            return;
-        }
-
-        // Prüfen ob Unentschieden nach KI-Zug
-        if (IsBoardFull())
-        {
-            gameMessage = "Unentschieden! 🤝";
-            gameOver = true;
-            return;
-        }
-
-        // Spieler ist wieder dran
+        gameMessage = "Du bist dran!";
         isPlayerTurn = true;
-        gameMessage = "Du bist dran! (X)";
     }
 
-    private void MakeAIMove()
+    private void AIMove()
     {
-        // Erstelle Liste aller freien Felder
-        var availableCells = new List<int>();
-        for (int i = 0; i < 9; i++)
+        var freeCells = Enumerable.Range(0, 9).Where(i => string.IsNullOrEmpty(board[i])).ToList();
+        if (freeCells.Any())
         {
-            if (string.IsNullOrEmpty(board[i]))
-            {
-                availableCells.Add(i);
-            }
-        }
-
-        if (availableCells.Count > 0)
-        {
-            // Zufälligen freien Platz wählen
-            int randomIndex = random.Next(availableCells.Count);
-            int cellIndex = availableCells[randomIndex];
-            board[cellIndex] = "O";
+            var rnd = new Random();
+            int move = freeCells[rnd.Next(freeCells.Count)];
+            board[move] = "O";
         }
     }
 
-    private bool CheckWinner(string player)
+    private bool CheckWin(string symbol)
     {
-        // Alle Gewinnkombinationen definieren
-        int[,] winPatterns = {
-            {0,1,2}, {3,4,5}, {6,7,8}, // Reihen
-            {0,3,6}, {1,4,7}, {2,5,8}, // Spalten
-            {0,4,8}, {2,4,6}           // Diagonalen
-        };
-
-        // Prüfe jede Gewinnkombination
-        for (int i = 0; i < winPatterns.GetLength(0); i++)
+        for (int i = 0; i < winCombos.GetLength(0); i++)
         {
-            if (board[winPatterns[i, 0]] == player &&
-                board[winPatterns[i, 1]] == player &&
-                board[winPatterns[i, 2]] == player)
+            if (symbol == board[winCombos[i, 0]] &&
+                symbol == board[winCombos[i, 1]] &&
+                symbol == board[winCombos[i, 2]])
             {
                 return true;
             }
         }
-
         return false;
     }
 
-    private bool IsBoardFull()
-    {
-        for (int i = 0; i < 9; i++)
-        {
-            if (string.IsNullOrEmpty(board[i]))
-                return false;
-        }
-        return true;
-    }
+    private bool IsDraw() => board.All(cell => !string.IsNullOrEmpty(cell));
 
-    private bool IsGameOver()
-    {
-        return gameOver;
-    }
-
-    private string GetCellClass(int index)
-    {
-        if (board[index] == "X")
-            return "player-x";
-        else if (board[index] == "O")
-            return "player-o";
-        else
-            return "";
-    }
+    private string GetCellClass(int index) =>
+        board[index] == "X" ? "player-x" :
+        board[index] == "O" ? "player-o" : "";
 
     private void ResetGame()
     {
-        InitializeGame();
-        StateHasChanged();
+        board = new string[9];
+        isPlayerTurn = true;
+        gameOver = false;
+        gameMessage = "Du bist dran!";
     }
 }
