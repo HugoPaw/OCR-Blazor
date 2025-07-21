@@ -1,40 +1,40 @@
-﻿@page "/"
+﻿    @page "/"
 
-<h1 class="display-4 mb-4">Willkommen bei Hugo's Entwickler-Portfolio</h1>
+    <h1 class="display-4 mb-4">Willkommen bei Hugo's Entwickler-Portfolio</h1>
 
-<p class="lead">
-    Diese Webanwendung dient als Zentrale für meine Projekte – insbesondere im Bereich OCR, Blazor und GitHub-Integrationen.
-    Hier experimentiere ich mit Technologien, entwickle Tools und dokumentiere meinen Fortschritt.
-</p>
+    <p class="lead">
+        Diese Webanwendung dient als Zentrale für meine Projekte – insbesondere im Bereich OCR, Blazor und GitHub-Integrationen.
+        Hier experimentiere ich mit Technologien, entwickle Tools und dokumentiere meinen Fortschritt.
+    </p>
 
-<hr class="mb-5" />
+    <hr class="mb-5" />
 
-<h2>Projekte & Tools</h2>
+    <h2>Projekte & Tools</h2>
 
-<div class="row row-cols-1 row-cols-md-2 g-4 mt-3">
-    @foreach (var item in navItems)
-    {
-        <div class="col">
-            <div class="card h-100 shadow-sm">
-                <div class="card-body">
-                    <h5 class="card-title">@item.Title</h5>
-                    <p class="card-text">@item.Description</p>
-                    <NavLink class="btn btn-outline-primary" href="@item.Url">Seite öffnen</NavLink>
+    <div class="row row-cols-1 row-cols-md-2 g-4 mt-3">
+        @foreach (var item in navItems)
+        {
+            <div class="col">
+                <div class="card h-100 shadow-sm">
+                    <div class="card-body">
+                        <h5 class="card-title">@item.Title</h5>
+                        <p class="card-text">@item.Description</p>
+                        <NavLink class="btn btn-outline-primary" href="@item.Url">Seite öffnen</NavLink>
+                    </div>
                 </div>
             </div>
-        </div>
-    }
-</div>
+        }
+    </div>
 
-<hr class="mt-5" />
+    <hr class="mt-5" />
 
-<h2>Technologien</h2>
+    <h2>Technologien</h2>
 
-<footer class="text-muted mt-5">
-    &copy; @DateTime.Now.Year Hugo Pawlowski – Alle Rechte vorbehalten.
-</footer>
+    <footer class="text-muted mt-5">
+        &copy; @DateTime.Now.Year Hugo Pawlowski – Alle Rechte vorbehalten.
+    </footer>
 
-@code {
+    @code {
     private List<NavItem> navItems = new()
 {
     // Texterkennung
@@ -54,7 +54,7 @@
     new NavItem("3D Ball", "/ball", "Demo für 3D-Animation mit Blazor."),
 
     // Sport
-    new NavItem("Fussball", "/fusball", "Fussballinfos und Statistiken."),
+    new NavItem("Fussball", "/fussball", "Fussballinfos und Statistiken."),
     new NavItem("Swiss Teams", "/swissteams", "Infos zu Schweizer Teams."),
 
     // Lernen
@@ -68,25 +68,30 @@
     // Spiele
     new NavItem("Black Jack", "/BJ", "Kartenspiel Black Jack online spielen."),
     new NavItem("Hangman", "/Hangman", "Wortspiel zur Buchstabenraten."),
+    new NavItem("Tic Tac Toe", "/Tictactoe", "Tic Tac Toe gegen KI spielen."),
+    new NavItem("Reaction Game", "/Reaction", "Teste deine Reaktionszeit."),
+    new NavItem("Poker", "/Poker", "Poker-Demo gegen Computergegner."),
 
-    // Nasa
+    // NASA
     new NavItem("NASA", "/Nasa", "NASA API Daten und Visualisierungen."),
     new NavItem("NeoWs", "/NeoWs", "Near Earth Objects analysieren."),
-    new NavItem("Mars Rover", "/Marsrover", "Mars Rover Bilder anzeigen.")
+    new NavItem("Mars Rover", "/Marsrover", "Mars Rover Bilder anzeigen."),
+    new NavItem("Donki", "/Donki", "Space Weather Daten von der NASA."),
+    new NavItem("GeneLab", "/GeneLab", "Genetik-Daten von der NASA auswerten.")
 };
 
 
-    private record NavItem(string Title, string Url, string Description);
+        private record NavItem(string Title, string Url, string Description);
 
-    Dictionary<string, bool> toggles = new()
-    {
-        { "Texterkennung", false },
-        { "AITools", false },
-        { "Projekte", false },
-        { "Sport", false },
-        { "Lernen", false },
-        { "Sicherheit", false }
-    };
+        Dictionary<string, bool> toggles = new()
+        {
+            { "Texterkennung", false },
+            { "AITools", false },
+            { "Projekte", false },
+            { "Sport", false },
+            { "Lernen", false },
+            { "Sicherheit", false }
+        };
 
-    void Toggle(string section) => toggles[section] = !toggles[section];
-}
+        void Toggle(string section) => toggles[section] = !toggles[section];
+    }
