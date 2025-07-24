@@ -6,7 +6,11 @@
 <div class="weather-container">
     <h3 class="weather-title">Wetter in Luzern</h3>
 
-    @if (weatherData != null)
+    @if (isLoading)
+    {
+        <p class="loading-message">Wetterdaten werden geladen...</p>
+    }
+    else if (weatherData != null)
     {
         <div class="chart-container" style="height:300px;">
             <canvas id="weatherChart" width="400" height="250"></canvas>
@@ -17,8 +21,8 @@
             {
                 var parsedTime = DateTime.Parse(weatherData.Hourly.Time[i]);
                 <li class="temperature-item">
-                    <span class="temperature-time">@parsedTime:dd.MM. HH:mm Uhr:</span>
-                    <span class="temperature-value">@weatherData.Hourly.Temperature2m[i] °C</span>
+                    <span class="temperature-time">@parsedTime.ToString("dd.MM. HH:mm") Uhr:</span>
+                    <span class="temperature-value">@($"{weatherData.Hourly.Temperature2m[i]:F1}") °C</span>
                 </li>
             }
         </ul>
@@ -27,20 +31,84 @@
     {
         <div class="error-message">Fehler beim Laden der Wetterdaten. Bitte später erneut versuchen.</div>
     }
-    else
-    {
-        <p class="loading-message">Wetterdaten werden geladen...</p>
-    }
 </div>
+
+<style>
+    .weather-container {
+        padding: 20px;
+        font-family: Arial, sans-serif;
+        max-width: 800px;
+        margin: 0 auto;
+    }
+
+    .weather-title {
+        text-align: center;
+        margin-bottom: 20px;
+        color: #333;
+    }
+
+    .chart-container {
+        margin-bottom: 20px;
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        padding: 10px;
+    }
+
+    .temperature-list {
+        list-style-type: none;
+        padding: 0;
+        margin: 0;
+    }
+
+    .temperature-item {
+        display: flex;
+        justify-content: space-between;
+        padding: 8px 12px;
+        border-bottom: 1px solid #eee;
+        transition: background-color 0.2s;
+    }
+
+        .temperature-item:hover {
+            background-color: #f5f5f5;
+        }
+
+    .temperature-time {
+        font-weight: 500;
+        color: #555;
+    }
+
+    .temperature-value {
+        color: #007acc;
+        font-weight: 600;
+    }
+
+    .loading-message,
+    .error-message {
+        text-align: center;
+        padding: 30px;
+        font-size: 1.1em;
+        border-radius: 8px;
+    }
+
+    .loading-message {
+        background-color: #e3f2fd;
+        color: #1976d2;
+    }
+
+    .error-message {
+        background-color: #ffebee;
+        color: #c62828;
+    }
+</style>
 
 @code {
     private WeatherResponse? weatherData;
+    private bool isLoading = true;
     private bool isError = false;
 
-    protected override async Task OnAfterRenderAsync(bool firstRender)
+    protected override async Task OnInitializedAsync()
     {
-        if (!firstRender || weatherData != null) return;
-
         try
         {
             var url = "https://api.open-meteo.com/v1/forecast?latitude=47.05&longitude=8.31&hourly=temperature_2m";
@@ -63,12 +131,15 @@
                 isError = true;
             }
         }
-        catch
+        catch (Exception ex)
         {
             isError = true;
+            Console.WriteLine($"Fehler beim Abrufen der Wetterdaten: {ex.Message}");
         }
-
-        StateHasChanged();
+        finally
+        {
+            isLoading = false;
+        }
     }
 
     public class WeatherResponse
@@ -86,3 +157,62 @@
         public List<double> Temperature2m { get; set; } = new();
     }
 }
+
+
+<script>
+    window.WETTER = {
+        drawWeatherChart: function (labels, data) {
+            const canvas = document.getElementById('weatherChart');
+            if (!canvas) return;
+
+            const ctx = canvas.getContext('2d');
+
+            // Altes Chart zerstören, falls vorhanden
+            if (window.weatherChartInstance) {
+                window.weatherChartInstance.destroy();
+            }
+
+            window.weatherChartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Temperatur (°C)',
+                        data: data,
+                        borderColor: '#007acc',
+                        backgroundColor: 'rgba(0,122,204,0.1)',
+                        fill: true,
+                        tension: 0.4,
+                        pointRadius: 3,
+                        pointBackgroundColor: '#007acc'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top'
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: false,
+                            ticks: {
+                                callback: function(value) {
+                                    return value + '°C';
+                                }
+                            }
+                        },
+                        x: {
+                            grid: {
+                                display: false
+                            }
+                        }
+                    }
+                }
+            });
+        }
+    };
+</script>
