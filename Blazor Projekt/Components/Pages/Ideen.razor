@@ -1,1 +1,336 @@
 ﻿@page "/ideen"
+@inject IJSRuntime JS
+
+<h3>Ideen - Mindmap & Paint</h3>
+
+<style>
+    .toolbar {
+        margin-bottom: 15px;
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        flex-wrap: wrap;
+    }
+
+    .content-area {
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        padding: 15px;
+        min-height: 500px;
+    }
+
+    .mindmap-container {
+        position: relative;
+    }
+
+    .node-input {
+        margin-top: 15px;
+        display: flex;
+        gap: 10px;
+    }
+
+        .node-input input {
+            flex: 1;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+
+        .node-input button {
+            padding: 8px 15px;
+        }
+
+    canvas {
+        background-color: white;
+    }
+
+    select, input[type="range"] {
+        padding: 5px;
+        border-radius: 4px;
+        border: 1px solid #ccc;
+    }
+</style>
+
+<div class="toolbar">
+    <button class="btn btn-primary" @onclick="ToggleView">
+        Wechseln zu @(isMindmapView ? "Paint" : "Mindmap")
+    </button>
+    @if (!isMindmapView)
+    {
+        <button class="btn btn-secondary" @onclick="ClearCanvas">Leeren</button>
+        <select @onchange="ColorChange">
+            <option value="black">Schwarz</option>
+            <option value="red">Rot</option>
+            <option value="blue">Blau</option>
+            <option value="green">Grün</option>
+            <option value="purple">Lila</option>
+            <option value="orange">Orange</option>
+        </select>
+        <span>Stärke: @currentWidth</span>
+        <input type="range" min="1" max="20" @bind="currentWidth" />
+    }
+</div>
+
+<div class="content-area">
+    @if (isMindmapView)
+    {
+        <div class="mindmap-container">
+            <svg width="100%" height="500px">
+                @foreach (var connection in connections)
+                {
+                    <line x1="@connection.StartX" y1="@connection.StartY"
+                          x2="@connection.EndX" y2="@connection.EndY"
+                          stroke="gray" stroke-width="2" />
+                }
+                @foreach (var node in nodes)
+                {
+                    <g @onclick="@(e => SelectNode(node))" style="cursor: pointer;">
+                        <circle cx="@node.X" cy="@node.Y" r="@node.Radius"
+                                fill="@(node == selectedNode ? "#ffeb3b" : node.Color)"
+                                stroke="black" stroke-width="2" />
+                        <text x="@node.X" y="@node.Y" text-anchor="middle"
+                              dy=".3em" font-family="Arial" font-size="12">
+                            @node.Text
+                        </text>
+                    </g>
+                }
+            </svg>
+            <div class="node-input">
+                <input @bind="newNodeText" placeholder="Neue Idee eingeben" @onkeypress="AddNodeOnEnter" />
+                <button class="btn btn-success" @onclick="AddNode">Hinzufügen</button>
+                @if (selectedNode != null && selectedNode != rootNode)
+                {
+                    <button class="btn btn-danger" @onclick="DeleteNode">Löschen</button>
+                }
+            </div>
+            @if (selectedNode != null)
+            {
+                <div style="margin-top: 10px; padding: 10px; background: #f5f5f5; border-radius: 4px;">
+                    <strong>Ausgewählt:</strong> @selectedNode.Text
+                </div>
+            }
+        </div>
+    }
+    else
+    {
+        <canvas width="100%" height="500" @ref="canvasReference"
+                @onmousedown="StartDrawing"
+                @onmousemove="Draw"
+                @onmouseup="StopDrawing"
+                @onmouseleave="StopDrawing"
+                style="cursor: crosshair; border: 1px solid #eee; background: white;">
+        </canvas>
+        <div style="margin-top: 10px; display: flex; gap: 10px; flex-wrap: wrap;">
+            <button class="btn btn-outline-secondary" @onclick="SetPenTool">Stift</button>
+            <button class="btn btn-outline-secondary" @onclick="SetEraserTool">Radierer</button>
+            <span>Modus: @currentTool</span>
+        </div>
+    }
+</div>
+
+@code {
+    // View Management
+    private bool isMindmapView = true;
+    private void ToggleView() => isMindmapView = !isMindmapView;
+
+    // Mindmap Logic
+    private List<MindNode> nodes = new();
+    private List<Connection> connections = new();
+    private MindNode? selectedNode;
+    private MindNode? rootNode;
+    private string newNodeText = "";
+
+    // Paint Logic
+    private ElementReference canvasReference;
+    private bool isDrawing = false;
+    private string currentColor = "black";
+    private int currentWidth = 3;
+    private string currentTool = "pen";
+
+    protected override void OnInitialized()
+    {
+        // Initiale Mindmap-Knoten
+        rootNode = new MindNode
+        {
+            X = 400,
+            Y = 250,
+            Text = "Hauptidee",
+            Color = "#4caf50",
+            Radius = 40
+        };
+        nodes.Add(rootNode);
+        selectedNode = rootNode;
+    }
+
+    // Mindmap Methods
+    private void AddNode()
+    {
+        if (!string.IsNullOrWhiteSpace(newNodeText) && selectedNode != null)
+        {
+            var random = new Random();
+            var newNode = new MindNode
+            {
+                X = selectedNode.X + random.Next(-200, 200),
+                Y = selectedNode.Y + random.Next(-150, 150),
+                Text = newNodeText,
+                Color = GetRandomColor(),
+                Radius = 30
+            };
+
+            // Boundary check
+            newNode.X = Math.Max(60, Math.Min(740, newNode.X));
+            newNode.Y = Math.Max(60, Math.Min(440, newNode.Y));
+
+            nodes.Add(newNode);
+            connections.Add(new Connection
+            {
+                StartX = selectedNode.X,
+                StartY = selectedNode.Y,
+                EndX = newNode.X,
+                EndY = newNode.Y
+            });
+
+            newNodeText = "";
+        }
+    }
+
+    private void AddNodeOnEnter(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter") AddNode();
+    }
+
+    private void SelectNode(MindNode node)
+    {
+        selectedNode = node;
+    }
+
+    private void DeleteNode()
+    {
+        if (selectedNode != null && selectedNode != rootNode)
+        {
+            // Entferne Verbindungen
+            connections.RemoveAll(c =>
+                (c.StartX == selectedNode.X && c.StartY == selectedNode.Y) ||
+                (c.EndX == selectedNode.X && c.EndY == selectedNode.Y));
+
+            // Entferne Knoten
+            nodes.Remove(selectedNode);
+            selectedNode = rootNode;
+        }
+    }
+
+    private string GetRandomColor()
+    {
+        var colors = new[] { "#2196f3", "#ff9800", "#e91e63", "#9c27b0", "#00bcd4", "#8bc34a" };
+        var random = new Random();
+        return colors[random.Next(colors.Length)];
+    }
+
+    // Paint Methods
+    private async Task StartDrawing(MouseEventArgs args)
+    {
+        isDrawing = true;
+        var clientPos = await GetCanvasCoordinates(args);
+        await JS.InvokeVoidAsync("beginPath", canvasReference, clientPos.x, clientPos.y);
+    }
+
+    private async Task Draw(MouseEventArgs args)
+    {
+        if (isDrawing)
+        {
+            var clientPos = await GetCanvasCoordinates(args);
+            var color = currentTool == "eraser" ? "white" : currentColor;
+            var width = currentTool == "eraser" ? currentWidth * 2 : currentWidth;
+            await JS.InvokeVoidAsync("drawLine", canvasReference, clientPos.x, clientPos.y, color, width);
+        }
+    }
+
+    private void StopDrawing()
+    {
+        isDrawing = false;
+    }
+
+    private async Task ClearCanvas()
+    {
+        await JS.InvokeVoidAsync("clearCanvas", canvasReference);
+    }
+
+    private void ColorChange(ChangeEventArgs e)
+    {
+        currentColor = e.Value?.ToString() ?? "black";
+    }
+
+    private void SetPenTool()
+    {
+        currentTool = "pen";
+    }
+
+    private void SetEraserTool()
+    {
+        currentTool = "eraser";
+    }
+
+    private async Task<(double x, double y)> GetCanvasCoordinates(MouseEventArgs args)
+    {
+        var rect = await JS.InvokeAsync<Rectangle>("getBoundingClientRect", canvasReference);
+        return (args.ClientX - rect.Left, args.ClientY - rect.Top);
+    }
+
+    public class MindNode
+    {
+        public int X { get; set; }
+        public int Y { get; set; }
+        public string Text { get; set; } = "";
+        public string Color { get; set; } = "#2196f3";
+        public int Radius { get; set; } = 30;
+    }
+
+    public class Connection
+    {
+        public int StartX { get; set; }
+        public int StartY { get; set; }
+        public int EndX { get; set; }
+        public int EndY { get; set; }
+    }
+
+    public class Rectangle
+    {
+        public double Left { get; set; }
+        public double Top { get; set; }
+        public double Width { get; set; }
+        public double Height { get; set; }
+    }
+}
+
+<script>
+    window.beginPath = (canvas, x, y) => {
+        const ctx = canvas.getContext('2d');
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+    };
+
+    window.drawLine = (canvas, x, y, color, width) => {
+        const rect = canvas.getBoundingClientRect();
+        const ctx = canvas.getContext('2d');
+        ctx.lineTo(x, y);
+        ctx.strokeStyle = color;
+        ctx.lineWidth = width;
+        ctx.lineCap = 'round';
+        ctx.stroke();
+    };
+
+    window.clearCanvas = (canvas) => {
+        const ctx = canvas.getContext('2d');
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+    };
+
+    window.getBoundingClientRect = (element) => {
+        const rect = element.getBoundingClientRect();
+        return {
+            left: rect.left,
+            top: rect.top,
+            width: rect.width,
+            height: rect.height
+        };
+    };
+</script>
