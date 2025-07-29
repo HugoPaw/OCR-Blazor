@@ -1,37 +1,151 @@
 ﻿@page "/fussball"
-<h3>Fussballspiele: Arsenal vs Chelsea (2016–2017)</h3>
+@using System.Net
+@using System.Text.Json
+@using Microsoft.AspNetCore.Components.Web
 
-@if (events == null)
-{
-    <p>Lade Spiele...</p>
-}
-else if (events.Count == 0)
-{
-    <p>Keine Spiele gefunden.</p>
-}
-else
-{
-    <ul>
-        @foreach (var ev in events)
-        {
-            <li>
-                <b>@ev.strEvent</b><br />
-                Datum: @ev.dateEvent<br />
-                Liga: @ev.strLeague
-            </li>
+<style>
+    .football-games {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        max-width: 600px;
+        margin: 2rem auto;
+        padding: 1rem;
+    }
+
+        .football-games .loading,
+        .football-games .error,
+        .football-games .no-games {
+            padding: 1rem;
+            margin: 0.5rem 0;
+            border-radius: 8px;
+            font-size: 0.95rem;
         }
-    </ul>
-}
+
+        .football-games .loading {
+            color: #007bff;
+            font-style: italic;
+        }
+
+        .football-games .error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .football-games .no-games {
+            color: #6c757d;
+            font-style: italic;
+        }
+
+        .football-games .games-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .football-games .game-item {
+            background: #f9f9f9;
+            border: 1px solid #ddd;
+            margin-bottom: 0.5rem;
+            padding: 0.75rem;
+            border-radius: 6px;
+            font-size: 0.95rem;
+        }
+
+            .football-games .game-item strong {
+                color: #2c3e50;
+            }
+
+            .football-games .game-item .date,
+            .football-games .game-item .league {
+                color: #495057;
+                font-size: 0.9rem;
+            }
+</style>
+
+<div class="football-games">
+    <h3>⚽ Fußballspiele: Arsenal vs Chelsea (2016–2017)</h3>
+
+    @if (isLoading)
+    {
+        <div class="loading">
+            <p>Lade Spiele...</p>
+        </div>
+    }
+    else if (hasError)
+    {
+        <div class="error">
+            <p>❌ Fehler beim Laden der Spiele: @errorMessage</p>
+        </div>
+    }
+    else if (events?.Count == 0)
+    {
+        <div class="no-games">
+            <p>Keine Spiele gefunden.</p>
+        </div>
+    }
+    else
+    {
+        <ul class="games-list">
+            @foreach (var ev in events)
+            {
+                <li class="game-item">
+                    <strong>@ev.strEvent</strong><br />
+                    <span class="date">📅 @ev.dateEventFormatted</span><br />
+                    <span class="league">🏆 @ev.strLeague</span>
+                </li>
+            }
+        </ul>
+    }
+</div>
 
 @code {
     private List<FootballEvent> events;
+    private bool isLoading = true;
+    private bool hasError = false;
+    private string errorMessage;
+
+    [Inject] private HttpClient Http { get; set; }
 
     protected override async Task OnInitializedAsync()
     {
-        using var http = new HttpClient();
-        var url = "https://www.thesportsdb.com/api/v1/json/3/searchevents.php?e=Arsenal_vs_Chelsea&s=2016-2017";
-        var result = await http.GetFromJsonAsync<FootballResponse>(url);
-        events = result?.eventList ?? new List<FootballEvent>();
+        try
+        {
+            isLoading = true;
+            var url = "https://www.thesportsdb.com/api/v1/json/3/searchevents.php?e=Arsenal_vs_Chelsea&s=2016-2017";
+            var result = await Http.GetFromJsonAsync<FootballResponse>(url);
+
+            if (result?.eventList == null)
+            {
+                events = new List<FootballEvent>();
+            }
+            else
+            {
+                events = result.eventList.Select(e => new FootballEvent(e)).ToList();
+            }
+        }
+        catch (HttpRequestException httpEx)
+        {
+            hasError = true;
+            errorMessage = $"Netzwerkfehler: {httpEx.Message}";
+        }
+        catch (NotSupportedException)
+        {
+            hasError = true;
+            errorMessage = "Die Antwort wird nicht unterstützt.";
+        }
+        catch (JsonException jsonEx)
+        {
+            hasError = true;
+            errorMessage = $"Ungültiges JSON: {jsonEx.Message}";
+        }
+        catch (Exception ex)
+        {
+            hasError = true;
+            errorMessage = $"Allgemeiner Fehler: {ex.Message}";
+        }
+        finally
+        {
+            isLoading = false;
+        }
     }
 
     public class FootballResponse
@@ -45,5 +159,29 @@ else
         public string strEvent { get; set; }
         public string strLeague { get; set; }
         public string dateEvent { get; set; }
+
+        // Formatierter Datumsstring (deutsch)
+        public string dateEventFormatted
+        {
+            get
+            {
+                if (DateTime.TryParse(dateEvent, out var date))
+                {
+                    return date.ToString("dd. MMMM yyyy", new System.Globalization.CultureInfo("de-DE"));
+                }
+                return dateEvent ?? "Unbekanntes Datum";
+            }
+        }
+
+        // Kopierkonstruktor für sicheres Mapping
+        public FootballEvent() { }
+
+        public FootballEvent(FootballEvent source)
+        {
+            idEvent = source.idEvent;
+            strEvent = source.strEvent;
+            strLeague = source.strLeague;
+            dateEvent = source.dateEvent;
+        }
     }
 }
