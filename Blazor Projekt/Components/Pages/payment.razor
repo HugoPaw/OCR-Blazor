@@ -1,0 +1,362 @@
+﻿@page "/payment"
+@using Microsoft.JSInterop
+@using System.Text.Json
+
+<style>
+    .container {
+        display: flex;
+        gap: 20px;
+        margin: 20px;
+    }
+
+    .main-content {
+        flex: 3;
+    }
+
+    .sidebar {
+        flex: 1;
+        background-color: #f8f9fa;
+        padding: 15px;
+        border-radius: 8px;
+    }
+
+    .chart-container {
+        height: 300px;
+        margin-bottom: 30px;
+    }
+
+    .calendar {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        gap: 8px;
+        margin-top: 20px;
+    }
+
+    .day {
+        border: 1px solid #ddd;
+        padding: 10px;
+        text-align: center;
+        cursor: pointer;
+        background-color: #fff;
+        min-height: 60px;
+        font-size: 0.9em;
+    }
+
+        .day:hover {
+            background-color: #f0f8ff;
+        }
+
+    .income-label {
+        font-weight: bold;
+        color: #28a745;
+        font-size: 0.9em;
+        margin-top: 4px;
+    }
+
+    .popup {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: white;
+        padding: 20px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        z-index: 1000;
+        border-radius: 8px;
+        width: 400px;
+    }
+
+        .popup input, .popup textarea {
+            width: 100%;
+            margin-bottom: 10px;
+            padding: 8px;
+        }
+
+        .popup button {
+            margin-right: 10px;
+            padding: 8px 16px;
+        }
+
+    .overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0,0,0,0.5);
+        z-index: 999;
+    }
+
+    .form-group {
+        margin-bottom: 15px;
+    }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 8px;
+        }
+</style>
+
+<div class="container">
+    <!-- Linke Seite: Eingabeformular + Graph + Kalender -->
+    <div class="main-content">
+        <h2>Mein Verdienst-Tracker</h2>
+
+        <!-- Eingabeformular -->
+        <div style="background:#f9f9f9; padding:15px; border-radius:8px; margin-bottom:20px;">
+            <div class="form-group">
+                <label>Stundenlohn (brutto)</label>
+                <input type="number" step="0.01" @bind="HourlyRate" placeholder="z.B. 25" />
+            </div>
+            <div class="form-group">
+                <label>Stunden pro Tag</label>
+                <input type="number" step="0.5" @bind="HoursPerDay" placeholder="z.B. 8" />
+            </div>
+            <div class="form-group">
+                <label>Netto in % (z.B. 75%)</label>
+                <input type="number" @bind="NetPercentage" placeholder="75" /> %
+            </div>
+            <button @onclick="CalculateDailyIncome" class="btn btn-primary">Berechnen</button>
+        </div>
+
+        <!-- Tagesverdienst Anzeige -->
+        <h4>Heutiger Verdienst: <strong>@DailyIncome.ToString("C")</strong> (netto)</h4>
+
+        <!-- Graph -->
+        <div class="chart-container">
+            <canvas id="incomeChart"></canvas>
+        </div>
+
+        <!-- Kalender -->
+        <h4>Monatskalender</h4>
+        <div class="calendar">
+            @for (int i = 1; i <= DateTime.DaysInMonth(CurrentMonth.Year, CurrentMonth.Month); i++)
+            {
+                var date = new DateTime(CurrentMonth.Year, CurrentMonth.Month, i);
+                var entry = DailyEntries.GetValueOrDefault(date);
+                <div class="day"
+                     @ondblclick="() => OpenEntryPopup(date)"
+                     title="Doppelklick zum Bearbeiten">
+                    <div>@i</div>
+                    @if (entry != null && entry.Income > 0)
+                    {
+                        <div class="income-label">@entry.Income.ToString("C")</div>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- Rechte Seite: Ausgaben -->
+    <div class="sidebar">
+        <h4>Monatliche Ausgaben</h4>
+        <ul>
+            @foreach (var expense in MonthlyExpenses)
+            {
+                <li>@expense.Description: @expense.Amount.ToString("C")</li>
+            }
+        </ul>
+        <button @onclick="AddExpense" class="btn btn-sm btn-outline-secondary">+ Ausgabe hinzufügen</button>
+    </div>
+</div>
+
+<!-- Popup für Eintrag -->
+@if (PopupVisible)
+{
+    <div class="overlay" @onclick="ClosePopup"></div>
+    <div class="popup">
+        <h5>Eintrag für @SelectedDate?.ToString("dd.MM.yyyy")</h5>
+        <label>Titel</label>
+        <input type="text" @bind="CurrentEntry.Title" />
+
+        <label>Beschreibung</label>
+        <textarea @bind="CurrentEntry.Description" rows="3"></textarea>
+
+        <label>Verdienst heute (€)</label>
+        <input type="number" step="0.01" @bind="CurrentEntry.Income" />
+
+        <div style="margin-top: 10px;">
+            <button @onclick="SaveEntry" class="btn btn-success">Speichern</button>
+            <button @onclick="ClosePopup" class="btn btn-secondary">Abbrechen</button>
+        </div>
+    </div>
+}
+
+@code {
+    [Inject] IJSRuntime JSRuntime { get; set; }
+
+    // Eingabewerte
+    private decimal HourlyRate { get; set; } = 25;
+    private double HoursPerDay { get; set; } = 8;
+    private int NetPercentage { get; set; } = 75;
+
+    // Berechnete Werte
+    private decimal DailyIncome { get; set; }
+
+    // Kalender
+    private DateTime CurrentMonth = DateTime.Today;
+
+    // Einträge pro Tag
+    private Dictionary<DateTime, DayEntry> DailyEntries { get; set; } = new();
+
+    // Ausgaben
+    private List<Expense> MonthlyExpenses { get; set; } = new()
+    {
+        new() { Description = "Miete", Amount = 800 },
+        new() { Description = "Strom", Amount = 120 }
+    };
+
+    // Popup-Steuerung
+    private bool PopupVisible { get; set; }
+    private DateTime? SelectedDate { get; set; }
+    private DayEntry CurrentEntry { get; set; } = new();
+
+    // Initialisierung
+    protected override void OnInitialized()
+    {
+        CalculateDailyIncome();
+        LoadTestData(); // Testdaten laden
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await CreateChart();
+        }
+    }
+
+    private void CalculateDailyIncome()
+    {
+        var gross = (decimal)HoursPerDay * HourlyRate;
+        DailyIncome = gross * (NetPercentage / 100m);
+    }
+
+    private void LoadTestData()
+    {
+        var rand = new Random();
+        for (int i = 1; i <= 15; i++)
+        {
+            var date = new DateTime(2025, 4, i);
+            DailyEntries[date] = new DayEntry
+            {
+                Title = $"Arbeit Tag {i}",
+                Description = "Reguläre Arbeit",
+                Income = DailyIncome + rand.Next(-20, 20)
+            };
+        }
+    }
+
+    private async Task CreateChart()
+    {
+        var days = Enumerable.Range(1, DateTime.DaysInMonth(CurrentMonth.Year, CurrentMonth.Month)).ToArray();
+        var incomes = days.Select(d =>
+        {
+            var date = new DateTime(CurrentMonth.Year, CurrentMonth.Month, d);
+            return DailyEntries.ContainsKey(date) ? (float)DailyEntries[date].Income : 0f;
+        }).ToArray();
+
+        var chartData = new
+        {
+            labels = days.Select(d => d.ToString()).ToArray(),
+            datasets = new object[]
+            {
+                new
+                {
+                    label = "Täglicher Verdienst (€)",
+                    data = incomes,
+                    borderColor = "#28a745",
+                    backgroundColor = "rgba(40, 167, 69, 0.2)",
+                    fill = true,
+                    tension = 0.3
+                }
+            }
+        };
+
+        await JSRuntime.InvokeVoidAsync("createChart", "incomeChart", "line", JsonSerializer.Serialize(chartData));
+    }
+
+    private void OpenEntryPopup(DateTime date)
+    {
+        SelectedDate = date;
+        CurrentEntry = DailyEntries.GetValueOrDefault(date, new DayEntry());
+        PopupVisible = true;
+    }
+
+    private void ClosePopup()
+    {
+        PopupVisible = false;
+        SelectedDate = null;
+    }
+
+    private void SaveEntry()
+    {
+        if (SelectedDate.HasValue)
+        {
+            DailyEntries[SelectedDate.Value] = new DayEntry
+            {
+                Title = CurrentEntry.Title,
+                Description = CurrentEntry.Description,
+                Income = CurrentEntry.Income
+            };
+        }
+        ClosePopup();
+        StateHasChanged();
+        _ = CreateChart(); // Graph neu zeichnen
+    }
+
+    private void AddExpense()
+    {
+        var newExpense = new Expense { Description = "Neue Ausgabe", Amount = 50 };
+        MonthlyExpenses.Add(newExpense);
+        StateHasChanged();
+    }
+
+    // Klassen
+    public class DayEntry
+    {
+        public string Title { get; set; } = "";
+        public string Description { get; set; } = "";
+        public decimal Income { get; set; }
+    }
+
+    public class Expense
+    {
+        public string Description { get; set; } = "";
+        public decimal Amount { get; set; }
+    }
+}
+
+<!-- JavaScript für Chart.js -->
+<script suppress-error="BL9992">
+    window.createChart = function (ctx, type, config) {
+        const canvas = document.getElementById(ctx);
+        if (!canvas) {
+            console.error("Canvas mit ID '" + ctx + "' nicht gefunden.");
+            return;
+        }
+        if (window.myChart) {
+            window.myChart.destroy();
+        }
+        const data = JSON.parse(config);
+        window.myChart = new Chart(canvas, {
+            type: type,
+            data: data,
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { position: 'top' }
+                },
+                scales: {
+                    y: { beginAtZero: true }
+                }
+            }
+        });
+    };
+</script>
